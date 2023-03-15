@@ -30,26 +30,12 @@ module.exports = {
         // OPTIONAL: Settings for Steam User (https://github.com/DoctorMcKay/node-steam-user#options-)
         'steam_user': {}
     },
-    // Origins allowed to connect to the HTTP/HTTPS API
-    'allowed_origins': [
-        'http://example.com',
-        'https://example.com',
-        'chrome-extension://jjicbefpemnphinccgikpdaagjebbnhg',
-        'http://steamcommunity.com',
-        'https://steamcommunity.com'
-    ],
-    // Origins allowed to connect to the HTTP/HTTPS API with Regex
-    'allowed_regex_origins': [
-        'https://.*\\.steamcommunity\\.com'
-    ],
     // Optionally configure a global rate limit across all endpoints
     'rate_limit': {
         'enable': false,
         'window_ms': 60 * 60 * 1000, // 60 min
         'max': 10000
     },
-    // Logging Level (error, warn, info, verbose, debug, silly)
-    'logLevel': 'debug',
     // Max amount of simultaneous requests from the same IP  (incl. WS and HTTP/HTTPS), -1 for unlimited
     'max_simultaneous_requests': 1,
     // Bool to enable game file updates from the SteamDB Github tracker (updated item definitions, images, names)
