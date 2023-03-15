@@ -2,10 +2,12 @@
   "name": "csgo_inspect_api",
   "version": "1.0.0",
   "description": "Express API in Node.js that allows you to inspect skins and other items.",
-  "main": "index.js",
+  "main": "build/index.js",
+  "type": "module",
   "scripts": {
     "compile": "npx tsc",
-    "hotcompile": "npx tsc -w"
+    "hotcompile": "npx tsc -w",
+    "start": "npx tsc && node ."
   },
   "repository": {
     "type": "git",
@@ -18,7 +20,7 @@
   },
   "homepage": "https://github.com/wavpro/CSGO_Inspect_API#readme",
   "dependencies": {
-    "express": "^4.18.2",
+    "fastify": "^4.14.1",
     "globaloffensive": "^2.3.0",
     "steam-user": "^4.27.1",
     "typescript": "^4.9.5"
