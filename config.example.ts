@@ -1,4 +1,4 @@
-module.exports = {
+export default {
     // Configuration for the HTTP API server
     'http': {
         'port': 80
