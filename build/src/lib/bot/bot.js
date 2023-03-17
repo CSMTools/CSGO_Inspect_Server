@@ -50,7 +50,7 @@ export default class Bot extends EventEmitter {
         }, 30 * 60 * 1000 + variance);
     }
     login(username, password, auth) {
-        __classPrivateFieldSet(this, _Bot_loggedIn, false, "f");
+        this.loggedIn = false;
         if (__classPrivateFieldGet(this, _Bot_steamClient, "f"))
             __classPrivateFieldGet(this, _Bot_steamClient, "f").logOff();
         __classPrivateFieldSet(this, _Bot_loginData, {
@@ -210,11 +210,11 @@ _Bot_loggedIn = new WeakMap(), _Bot_relogin = new WeakMap(), _Bot_steamClient = 
     });
     __classPrivateFieldGet(this, _Bot_csgoClient, "f").on('connectedToGC', () => {
         log(__classPrivateFieldGet(this, _Bot_loginData, "f").accountName, 'CSGO Client Ready!');
-        __classPrivateFieldSet(this, _Bot_loggedIn, true, "f");
+        this.loggedIn = true;
     });
     __classPrivateFieldGet(this, _Bot_csgoClient, "f").on('disconnectedFromGC', (reason) => {
         log(__classPrivateFieldGet(this, _Bot_loginData, "f").accountName, `CSGO unready (${reason}), trying to reconnect!`);
-        __classPrivateFieldSet(this, _Bot_loggedIn, false, "f");
+        this.loggedIn = false;
         // node-globaloffensive will automatically try to reconnect
     });
     __classPrivateFieldGet(this, _Bot_csgoClient, "f").on('connectionStatus', (status) => {

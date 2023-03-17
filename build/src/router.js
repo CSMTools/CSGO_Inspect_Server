@@ -2,6 +2,11 @@ import Bot from './lib/bot/bot.js';
 import config from '../config.js';
 const bot = new Bot(config.bot_settings);
 bot.login(config.logins[0].user, config.logins[0].pass, config.logins[0].auth);
+bot.on('ready', async () => {
+    console.log('owo');
+    let res = await bot.sendFloatRequest('steam://rungame/730/76561202255233023/+csgo_econ_action_preview%20S76561198826153281A28987979727D13835621694651971647');
+    console.log(res);
+});
 export default function router(fastify) {
     fastify.get('/', function (request, reply) {
         reply.send({ hello: 'world' });

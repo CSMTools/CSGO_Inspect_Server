@@ -112,3 +112,4 @@ yarn.lock
 # misc
 /.git
 /.config
+environment.d.ts

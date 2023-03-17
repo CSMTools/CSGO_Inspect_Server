@@ -49,7 +49,7 @@ export default class Bot extends EventEmitter {
   }
 
   login(username: string, password: string, auth: string) {
-    this.#loggedIn = false;
+    this.loggedIn = false;
 
     if (this.#steamClient) this.#steamClient.logOff();
 
@@ -185,12 +185,12 @@ export default class Bot extends EventEmitter {
     this.#csgoClient.on('connectedToGC', () => {
       log(this.#loginData.accountName, 'CSGO Client Ready!');
 
-      this.#loggedIn = true;
+      this.loggedIn = true;
     });
 
     this.#csgoClient.on('disconnectedFromGC', (reason) => {
       log(this.#loginData.accountName, `CSGO unready (${reason}), trying to reconnect!`);
-      this.#loggedIn = false;
+      this.loggedIn = false;
 
       // node-globaloffensive will automatically try to reconnect
     });
