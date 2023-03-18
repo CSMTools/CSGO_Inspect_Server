@@ -8,12 +8,17 @@ export default {
             'user': 'bottenanna1',
             'pass': 'XZ42MciogxAxOwfbFyEG',
             'auth': 'CvGac2gOYPIG5it27iLCBDMCIwA='
+        },
+        {
+            'user': 'bottenanna2',
+            'pass': '9jGC3rOE22DEYZeMlQ11',
+            'auth': '1P6hjwCzIYrCpRKUVy2vxeH/4XA='
         }
     ],
     'bot_settings': {
         'max_attempts': 1,
-        'request_delay': 1100,
-        'request_ttl': 2000
+        'request_delay': 5100,
+        'request_ttl': 9999
     },
     // Optionally configure a global rate limit across all endpoints
     'rate_limit': {
@@ -30,7 +35,9 @@ export default {
     // Postgres connection string to store results in (ex. postgres://user:pass@127.0.0.1:5432/postgres?sslmode=disable)
     'database_url': '',
     // OPTIONAL: Enable bulk inserts, may improve performance with many requests
-    'enable_bulk_inserts': false,
+    'enable_bulk_requests': true,
+    // OPTIONAL: Max amount of links that can be requested through the bulk inspect API. It is recommended to set this to double your bot count.
+    'max_bulk_amount': 4,
     // OPTIONAL: Key by the caller to allow inserting price information, required to use the feature
     'price_key': '',
     // OPTIONAL: Key by the caller to allow placing bulk searches

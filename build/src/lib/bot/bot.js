@@ -8,7 +8,8 @@ export default class Bot extends EventEmitter {
     #loggedIn = false;
     #relogin = false;
     #steamClient = new SteamUser({
-        enablePicsCache: true
+        enablePicsCache: true,
+        autoRelogin: false
     });
     #csgoClient = new GlobalOffensive(this.#steamClient);
     #loginData = {
@@ -62,13 +63,14 @@ export default class Bot extends EventEmitter {
     }
     #bindEvents() {
         this.#steamClient.on('error', (err) => {
-            log(this.#loginData.accountName, "Error logging in");
+            log(this.#loginData.accountName, `Error logging in (${err.eresult})`);
             if (err.eresult && login_errors[err.eresult] !== undefined) {
                 log(this.#loginData.accountName, login_errors[err.eresult]);
             }
         });
         this.#steamClient.on('disconnected', (eresult, msg) => {
             log(this.#loginData.accountName, `Logged off, reconnecting! (${eresult}, ${msg})`);
+            this.login(this.#loginData.accountName, this.#loginData.password, this.#loginData.authCode || '');
         });
         this.#steamClient.on('loggedOn', (details, parental) => {
             log(this.#loginData.accountName, `Log on OK`);
@@ -177,25 +179,22 @@ export default class Bot extends EventEmitter {
         return new Promise((resolve, reject) => {
             this.#resolve = resolve;
             this.busy = true;
-            // Guaranteed to work, but typescript wants reassurance lol
-            if (params) {
-                this.#currentRequest = params;
-                log(this.#loginData.accountName, `Fetching for ${this.#currentRequest.a}`);
-                if (!this.loggedIn) {
-                    reject('This bot is not ready');
-                }
-                else {
-                    // The first param (owner) depends on the type of inspect link
-                    this.#csgoClient.inspectItem(params.s !== '0' ? params.s : params.m, params.a, params.d);
-                }
-                // Set a timeout in case the GC takes too long to respond
-                this.ttlTimeout = setTimeout(() => {
-                    // GC didn't respond in time, reset and reject
-                    this.busy = false;
-                    this.#currentRequest = false;
-                    reject('ttl exceeded');
-                }, this.settings.request_ttl);
+            this.#currentRequest = params;
+            log(this.#loginData.accountName, `Fetching for ${this.#currentRequest.a}`);
+            if (!this.loggedIn) {
+                reject('This bot is not ready');
             }
+            else {
+                // The first param (owner) depends on the type of inspect link
+                this.#csgoClient.inspectItem(params.s !== '0' ? params.s : params.m, params.a, params.d);
+            }
+            // Set a timeout in case the GC takes too long to respond
+            this.ttlTimeout = setTimeout(() => {
+                // GC didn't respond in time, reset and reject
+                this.busy = false;
+                this.#currentRequest = false;
+                reject('ttl exceeded');
+            }, this.settings.request_ttl);
         });
     }
     set loggedIn(val) {

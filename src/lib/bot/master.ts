@@ -6,13 +6,13 @@ import { linkToInspectRequest } from '../util.js';
 import { BotSettings, InspectRequest, ItemData, LoginConfig } from '../types/BotTypes';
 
 export default class Master extends EventEmitter {
-  #logins: LoginConfig[];
-  #settings: BotSettings;
-  #bots: Bot[] = [];
+  #inspectQueue: (InspectRequest | null)[] = [];
   #botsBusyIndex: boolean[] = [];
   #botsAvailable: number = 0;
   #botsNotBusy: number = 0;
-  #inspectQueue: (InspectRequest | null)[] = [];
+  #settings: BotSettings;
+  #logins: LoginConfig[];
+  #bots: Bot[] = [];
 
   constructor(logins: LoginConfig[], settings: BotSettings) {
     super();
@@ -21,14 +21,6 @@ export default class Master extends EventEmitter {
     this.#settings = settings;
 
     this.#createBots();
-  }
-
-  #getNonBusyBot() {
-    for (let i = 0; i < this.#bots.length; i++) {
-      if (this.#botsBusyIndex[i] === true) {
-        return i;
-      }
-    }
   }
 
   #createBots() {
@@ -57,25 +49,31 @@ export default class Master extends EventEmitter {
   #bindEvents() {
     for (let i = 0; i < this.#bots.length; i++) {
       const bot = this.#bots[i];
+      const _this = this;
+
+      function handleBusy() {
+        _this.#botsBusyIndex[i] = _this.#bots[i].busy;
+        _this.botsNotBusy = _this.#botsBusyIndex.filter(x => x === false).length;
+      }
 
       bot.on('ready', () => {
         this.#botsAvailable++;
-        this.botsNotBusy += 1;
-        this.#toggleBusyIndex(i)
+        handleBusy()
       })
       bot.on('unready', () => {
         this.#botsAvailable--;
-        this.botsNotBusy -= 1;
-        this.#toggleBusyIndex(i)
+        handleBusy()
       })
-      bot.on('busy', () => {
-        this.botsNotBusy -= 1;
-        this.#toggleBusyIndex(i)
-      })
-      bot.on('unbusy', () => {
-        this.botsNotBusy += 1;
-        this.#toggleBusyIndex(i)
-      })
+      bot.on('busy', handleBusy)
+      bot.on('unbusy', handleBusy)
+    }
+  }
+
+  #getNonBusyBot() {
+    for (let i = 0; i < this.#bots.length; i++) {
+      if (this.#botsBusyIndex[i] === false) {
+        return i;
+      }
     }
   }
 
@@ -89,6 +87,7 @@ export default class Master extends EventEmitter {
     if (!inspectData) {
       return;
     }
+
     let botIndex = this.#getNonBusyBot()
     if (typeof botIndex === 'number') {
       this.#bots[botIndex].sendFloatRequest(inspectData)
@@ -96,7 +95,7 @@ export default class Master extends EventEmitter {
           this.emit('inspectResult', res);
         })
         .catch((err) => {
-          this.emit('inspectResult', err as string);
+          this.emit('inspectResult', `${inspectData?.a} ${err as string}`);
         })
     }
   }
@@ -120,9 +119,10 @@ export default class Master extends EventEmitter {
 
       this.on('inspectResult', function cb(res: ItemData | string) {
         if (typeof res === 'string') {
-          return reject(res);
-        }
-        if (res.a = params.a) {
+          if (res.startsWith(params.a)) {
+            return reject(res);
+          }
+        } else if (res.a = params.a) {
           _this.removeListener('inspectResult', cb)
 
           resolve(res);
@@ -135,21 +135,70 @@ export default class Master extends EventEmitter {
     })
   }
 
-  #toggleBusyIndex(i: number) {
-    this.#botsBusyIndex[i] = !this.#botsBusyIndex[i];
+  #inspectItemBulk(params: InspectRequest): Promise<ItemData> {
+    return new Promise((resolve, reject) => {
+      if (!this.#botsAvailable) {
+        reject('No bots available');
+      }
+
+      let _this = this;
+
+      this.on('inspectResult', function cb(res: ItemData | string) {
+        if (typeof res === 'string') {
+          if (res.startsWith(params.a)) {
+            return reject(res);
+          }
+        } else if (res.a = params.a) {
+          _this.removeListener('inspectResult', cb)
+
+          resolve(res);
+        }
+      })
+
+      if (this.botsNotBusy !== 0) {
+        this.#handleNextInspect();
+      }
+    })
+  }
+
+  inspectItemBulk(links: string[]): Promise<ItemData[]> {
+    return new Promise(async (resolve, reject) => {
+      const items: ItemData[] = [];
+
+      for (let i = 0; i < links.length; i++) {
+        let link = links[i];
+
+        const params = linkToInspectRequest(link);
+
+        if (params === null) {
+          reject('Invalid link');
+          return;
+        }
+
+        this.#inspectQueue.push(params);
+
+        let itemData = await this.#inspectItemBulk(params);
+
+        items.push(itemData);
+      }
+
+      resolve(items);
+    })
   }
 
   set botsNotBusy(val: number) {
-    const prev = this.#botsNotBusy;
+    this.#botsNotBusy = val;
 
-    if (val > prev) {
+    if (this.#botsNotBusy > 0) {
       this.#handleNextInspect();
     }
-
-    this.#botsNotBusy = val;
   }
 
   get botsNotBusy() {
     return this.#botsNotBusy;
+  }
+
+  get botsAvailable() {
+    return this.#botsAvailable;
   }
 }

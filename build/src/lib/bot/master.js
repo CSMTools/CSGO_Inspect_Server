@@ -2,25 +2,18 @@ import { EventEmitter } from 'events';
 import Bot from './bot.js';
 import { linkToInspectRequest } from '../util.js';
 export default class Master extends EventEmitter {
-    #logins;
-    #settings;
-    #bots = [];
+    #inspectQueue = [];
     #botsBusyIndex = [];
     #botsAvailable = 0;
     #botsNotBusy = 0;
-    #inspectQueue = [];
+    #settings;
+    #logins;
+    #bots = [];
     constructor(logins, settings) {
         super();
         this.#logins = logins;
         this.#settings = settings;
         this.#createBots();
-    }
-    #getNonBusyBot() {
-        for (let i = 0; i < this.#bots.length; i++) {
-            if (this.#botsBusyIndex[i] === true) {
-                return i;
-            }
-        }
     }
     #createBots() {
         for (let i = 0; i < this.#logins.length; i++) {
@@ -42,45 +35,46 @@ export default class Master extends EventEmitter {
     #bindEvents() {
         for (let i = 0; i < this.#bots.length; i++) {
             const bot = this.#bots[i];
+            const _this = this;
+            function handleBusy() {
+                _this.#botsBusyIndex[i] = _this.#bots[i].busy;
+                _this.botsNotBusy = _this.#botsBusyIndex.filter(x => x === false).length;
+            }
             bot.on('ready', () => {
                 this.#botsAvailable++;
-                this.botsNotBusy += 1;
-                this.#toggleBusyIndex(i);
+                handleBusy();
             });
             bot.on('unready', () => {
                 this.#botsAvailable--;
-                this.botsNotBusy -= 1;
-                this.#toggleBusyIndex(i);
+                handleBusy();
             });
-            bot.on('busy', () => {
-                this.botsNotBusy -= 1;
-                this.#toggleBusyIndex(i);
-            });
-            bot.on('unbusy', () => {
-                this.botsNotBusy += 1;
-                this.#toggleBusyIndex(i);
-            });
+            bot.on('busy', handleBusy);
+            bot.on('unbusy', handleBusy);
+        }
+    }
+    #getNonBusyBot() {
+        for (let i = 0; i < this.#bots.length; i++) {
+            if (this.#botsBusyIndex[i] === false) {
+                return i;
+            }
         }
     }
     async #handleNextInspect() {
         if (!this.#inspectQueue.length || !this.#botsNotBusy) {
-            console.log(2);
             return;
         }
-        console.log(3);
         let inspectData = this.#inspectQueue.shift();
         if (!inspectData) {
             return;
         }
         let botIndex = this.#getNonBusyBot();
         if (typeof botIndex === 'number') {
-            console.log(6);
             this.#bots[botIndex].sendFloatRequest(inspectData)
                 .then((res) => {
                 this.emit('inspectResult', res);
             })
                 .catch((err) => {
-                this.emit('inspectResult', err);
+                this.emit('inspectResult', `${inspectData?.a} ${err}`);
             });
         }
     }
@@ -98,30 +92,69 @@ export default class Master extends EventEmitter {
             let _this = this;
             this.on('inspectResult', function cb(res) {
                 if (typeof res === 'string') {
-                    return reject(res);
+                    if (res.startsWith(params.a)) {
+                        return reject(res);
+                    }
                 }
-                if (res.a = params.a) {
+                else if (res.a = params.a) {
                     _this.removeListener('inspectResult', cb);
                     resolve(res);
                 }
             });
             if (this.#botsNotBusy > 0) {
-                console.log(1);
                 this.#handleNextInspect();
             }
         });
     }
-    #toggleBusyIndex(i) {
-        this.#botsBusyIndex[i] = !this.#botsBusyIndex[i];
+    #inspectItemBulk(params) {
+        return new Promise((resolve, reject) => {
+            if (!this.#botsAvailable) {
+                reject('No bots available');
+            }
+            let _this = this;
+            this.on('inspectResult', function cb(res) {
+                if (typeof res === 'string') {
+                    if (res.startsWith(params.a)) {
+                        return reject(res);
+                    }
+                }
+                else if (res.a = params.a) {
+                    _this.removeListener('inspectResult', cb);
+                    resolve(res);
+                }
+            });
+            if (this.botsNotBusy !== 0) {
+                this.#handleNextInspect();
+            }
+        });
+    }
+    inspectItemBulk(links) {
+        return new Promise(async (resolve, reject) => {
+            const items = [];
+            for (let i = 0; i < links.length; i++) {
+                let link = links[i];
+                const params = linkToInspectRequest(link);
+                if (params === null) {
+                    reject('Invalid link');
+                    return;
+                }
+                this.#inspectQueue.push(params);
+                let itemData = await this.#inspectItemBulk(params);
+                items.push(itemData);
+            }
+            resolve(items);
+        });
     }
     set botsNotBusy(val) {
-        const prev = this.#botsNotBusy;
-        if (val > prev) {
+        this.#botsNotBusy = val;
+        if (this.#botsNotBusy > 0) {
             this.#handleNextInspect();
         }
-        this.#botsNotBusy = val;
     }
     get botsNotBusy() {
         return this.#botsNotBusy;
+    }
+    get botsAvailable() {
+        return this.#botsAvailable;
     }
 }

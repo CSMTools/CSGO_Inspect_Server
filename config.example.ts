@@ -45,7 +45,9 @@ export default {
     // Postgres connection string to store results in (ex. postgres://user:pass@127.0.0.1:5432/postgres?sslmode=disable)
     'database_url': '',
     // OPTIONAL: Enable bulk inserts, may improve performance with many requests
-    'enable_bulk_inserts': false,
+    'enable_bulk_requests': false,
+    // OPTIONAL: Max amount of links that can be requested through the bulk inspect API. It is recommended to set this to double your bot count.
+    'max_bulk_amount': 10,
     // OPTIONAL: Key by the caller to allow inserting price information, required to use the feature
     'price_key': '',
     // OPTIONAL: Key by the caller to allow placing bulk searches
