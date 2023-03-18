@@ -5,9 +5,9 @@ export default {
     'trust_proxy': false,
     'logins': [
         {
-            'user': process.env.USER,
-            'pass': process.env.PASS,
-            'auth': process.env.AUTH
+            'user': 'bottenanna1',
+            'pass': 'XZ42MciogxAxOwfbFyEG',
+            'auth': 'CvGac2gOYPIG5it27iLCBDMCIwA='
         }
     ],
     'bot_settings': {

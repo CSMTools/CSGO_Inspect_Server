@@ -13,17 +13,17 @@ export function linkToInspectRequest(link) {
         time: 0
     };
     link = decodeURI(link);
-    let linkParams = link.match(/steam:\/\/rungame\/730\/\d+\/\+csgo_econ_action_preview\s(S\d+|M\d+)(A\d+)(D\d+)/);
+    let linkParams = link.match(/steam:\/\/rungame\/730\/\d+\/(\+|\s)csgo_econ_action_preview\s(S\d+|M\d+)(A\d+)(D\d+)/);
     if (!linkParams) {
         return null;
     }
-    if (linkParams[1].startsWith('S')) {
-        request.s = linkParams[1].substring(1);
+    if (linkParams[2].startsWith('S')) {
+        request.s = linkParams[2].substring(1);
     }
     else {
-        request.m = linkParams[1].substring(1);
+        request.m = linkParams[2].substring(1);
     }
-    request.a = linkParams[2].substring(1);
-    request.d = linkParams[3].substring(1);
+    request.a = linkParams[3].substring(1);
+    request.d = linkParams[4].substring(1);
     return request;
 }

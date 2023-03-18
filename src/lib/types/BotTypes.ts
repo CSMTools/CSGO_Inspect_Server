@@ -7,6 +7,12 @@ export type LoginData = {
     authCode?: string,
     twoFactorCode?: string
   }
+
+export type LoginConfig = {
+  user: string,
+  pass: string,
+  auth: string
+}
   
 export type ItemData = {
     delay: number,

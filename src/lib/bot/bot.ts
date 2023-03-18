@@ -27,7 +27,7 @@ export default class Bot extends EventEmitter {
   #currentRequest: InspectRequest | boolean = false;
   ttlTimeout: NodeJS.Timeout | boolean = false;
   settings: BotSettings;
-  busy: boolean = false;
+  #busy: boolean = false;
 
   constructor(settings: BotSettings) {
     super();
@@ -191,6 +191,7 @@ export default class Bot extends EventEmitter {
     this.#csgoClient.on('disconnectedFromGC', (reason) => {
       log(this.#loginData.accountName, `CSGO unready (${reason}), trying to reconnect!`);
       this.loggedIn = false;
+      this.#busy = false;
 
       // node-globaloffensive will automatically try to reconnect
     });
@@ -206,16 +207,10 @@ export default class Bot extends EventEmitter {
     });
   }
 
-  sendFloatRequest(link: string) {
+  sendFloatRequest(params: InspectRequest): Promise<ItemData> {
     return new Promise((resolve, reject) => {
-      if (!isInspectLinkValid) {
-        log(this.#loginData.accountName, `Invalid link: ${link}`);
-        reject("Invalid link.")
-      }
       this.#resolve = resolve;
       this.busy = true;
-
-      let params = linkToInspectRequest(link)
 
       // Guaranteed to work, but typescript wants reassurance lol
       if (params) {
@@ -249,8 +244,21 @@ export default class Bot extends EventEmitter {
       this.emit(val ? 'ready' : 'unready');
     }
   }
-
+  
   get loggedIn() {
     return this.#loggedIn || false;
+  }
+
+  set busy(val) {
+    const prev = this.busy;
+    this.#busy = val;
+
+    if (val !== prev) {
+      this.emit(val ? 'busy' : 'unbusy');
+    }
+  }
+
+  get busy() {
+    return this.#busy || false;
   }
 }
