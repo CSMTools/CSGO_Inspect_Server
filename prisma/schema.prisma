@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model steam_users {
+  steam_id        String   @id
+  avatar_hash     String
+  vac_ban         Boolean?
+  trade_ban       Boolean?
+  last_update     BigInt
+  checked_friends Boolean
+}

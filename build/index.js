@@ -10,6 +10,3 @@ fastify.listen({ port: 443 }, function (err, address) {
         process.exit(1);
     }
 });
-import Scraper from './src/lib/web_scraper/index.js';
-const scraper = new Scraper();
-scraper.getFriends('76561198892632539');

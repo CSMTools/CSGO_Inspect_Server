@@ -34,7 +34,7 @@ export default class Bot extends EventEmitter {
         setInterval(() => {
             if (this.#csgoClient.haveGCSession) {
                 this.#relogin = true;
-                this.#steamClient.relog();
+                this.login(this.#loginData.accountName, this.#loginData.password, this.#loginData.authCode || '');
             }
         }, 30 * 60 * 1000 + variance);
     }
@@ -74,6 +74,9 @@ export default class Bot extends EventEmitter {
         });
         this.#steamClient.on('loggedOn', (details, parental) => {
             log(this.#loginData.accountName, `Log on OK`);
+            this.#steamClient.on('accountInfo', () => {
+                console.log(this.#steamClient.accountInfo);
+            });
             // Fixes reconnecting to CS:GO GC since node-steam-user still assumes we're playing 730
             // and never sends the appLaunched event to node-globaloffensive
             this.#steamClient?.gamesPlayed([], true);

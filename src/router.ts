@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify'
 
 import BotMaster from './lib/bot/master.js'
+import DataManager from './lib/database/index.js'
 
 import config from '../config.js'
 
@@ -14,6 +15,7 @@ interface BulkInspectQuerystring {
 
 export default function router(fastify: FastifyInstance) {
   const botMaster = new BotMaster(config.logins, config.bot_settings)
+  const dataManager = new DataManager(process.env.STEAM_API_KEY, botMaster)
 
   fastify.get('/', function (request, reply) {
     reply.send({ hello: 'world' })

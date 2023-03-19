@@ -36,3 +36,7 @@ export function linkToInspectRequest(link: string): InspectRequest | null {
 
   return request;
 }
+
+export function getHashByAvatarURL(url: string): string | null {
+  return url.match(/https:\/\/avatars\.akamai\.steamstatic\.com\/([\da-f]+)(_medium|_full)?\.(jpg|png|webp)/)?.[1] || null;
+}

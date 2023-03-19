@@ -44,7 +44,7 @@ export default class Bot extends EventEmitter {
     setInterval(() => {
       if (this.#csgoClient.haveGCSession) {
         this.#relogin = true;
-        this.#steamClient.relog();
+        this.login(this.#loginData.accountName, this.#loginData.password, this.#loginData.authCode || '');
       }
     }, 30 * 60 * 1000 + variance);
   }

@@ -10,7 +10,7 @@ export default {
         {
             'user': 'USERNAME',
             'pass': 'PASSWORD',
-            // You can either use a 2FA email/mobile token (5 letters/digits), or the shared_secret of mobile 2FA
+            // You can use the shared_secret of mobile 2FA
             'auth': '2FA_TOKEN'
         },
         {
@@ -42,14 +42,10 @@ export default {
     'enable_game_file_updates': true,
     // Amount of seconds to wait between updating game files (0 = No Interval Updates)
     'game_files_update_interval': 3600,
-    // Postgres connection string to store results in (ex. postgres://user:pass@127.0.0.1:5432/postgres?sslmode=disable)
-    'database_url': '',
     // OPTIONAL: Enable bulk inserts, may improve performance with many requests
     'enable_bulk_requests': false,
     // OPTIONAL: Max amount of links that can be requested through the bulk inspect API. It is recommended to set this to double your bot count.
     'max_bulk_amount': 10,
-    // OPTIONAL: Key by the caller to allow inserting price information, required to use the feature
-    'price_key': '',
     // OPTIONAL: Key by the caller to allow placing bulk searches
     'bulk_key': '',
 };
