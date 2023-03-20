@@ -36,7 +36,42 @@ export default class DataManager {
     }
 
     for (const user of users) {
-      let friends = await this.getFriendsOfUser(user.steam_id)
+      let friends: {
+        steam_id: string;
+        avatar_hash: string;
+        last_update: number;
+        checked_friends: boolean;
+      }[] = [];
+
+      (await this.getFriendsOfUser(user.steam_id)).forEach((friend) => {
+        friends.push({
+          steam_id: friend.steamId,
+          avatar_hash: friend.avatar_hash,
+          last_update: Date.now(),
+          checked_friends: false
+        });
+      })
+
+      if (!friends.length) {
+        continue;
+      }
+      try {
+        await prisma.steam_users.createMany({
+          data: friends,
+          skipDuplicates: true
+        })
+
+        await prisma.steam_users.update({
+          where: {
+            steam_id: user.steam_id
+          },
+          data: {
+            checked_friends: true
+          }
+        })
+      } catch (err) {
+        console.error(err);
+      }
     }
   }
   async getFriendsOfUser(steamId: string): Promise<SteamFriend[]> {
