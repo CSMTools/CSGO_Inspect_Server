@@ -8,7 +8,7 @@ datasource db {
 }
 
 model steam_users {
-  steam_id        String   @id
+  steam_id        String   @id @unique
   avatar_hash     String
   vac_ban         Boolean?
   trade_ban       Boolean?

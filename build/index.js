@@ -1,3 +1,5 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
 import router from './src/router.js';
 import Fastify from 'fastify';
 const fastify = Fastify({

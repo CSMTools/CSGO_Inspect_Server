@@ -3,11 +3,13 @@ import GlobalOffensive from 'globaloffensive'
 import SteamTotp from 'steam-totp'
 import { EventEmitter } from 'events'
 
-import { log, linkToInspectRequest, isInspectLinkValid } from "../util.js"
+import { log, linkToInspectRequest, isInspectLinkValid, getBotTag } from "../util.js"
 
 import login_errors from "../enum/BOT_LOGIN_ERRORS.js"
 
 import type { LoginData, ItemData, InspectRequest, BotSettings } from "../types/BotTypes.js"
+
+let TAG = '';
 
 export default class Bot extends EventEmitter {
   #loggedIn = false;
@@ -50,6 +52,7 @@ export default class Bot extends EventEmitter {
   }
 
   login(username: string, password: string, auth: string) {
+    TAG = getBotTag(username);
     this.loggedIn = false;
 
     if (this.#steamClient) this.#steamClient.logOff();
@@ -66,32 +69,32 @@ export default class Bot extends EventEmitter {
         this.#loginData.authCode = auth;
       } else {
         // Generate the code from the shared_secret
-        log(this.#loginData.accountName, "Generating 2FA code from shared_secret.")
+        log(TAG, "Generating 2FA code from shared_secret.")
         this.#loginData.twoFactorCode = SteamTotp.getAuthCode(auth);
       }
     }
 
-    log(this.#loginData.accountName, "Logging in...")
+    log(TAG, "Logging in...")
     this.#steamClient?.logOn(this.#loginData)
   }
 
   #bindEvents() {
     this.#steamClient.on('error', (err) => {
-      log(this.#loginData.accountName, `Error logging in (${err.eresult})`)
+      log(TAG, `Error logging in (${err.eresult})`)
 
       if (err.eresult && login_errors[err.eresult] !== undefined) {
-        log(this.#loginData.accountName, login_errors[err.eresult])
+        log(TAG, login_errors[err.eresult])
       }
     });
 
     this.#steamClient.on('disconnected', (eresult, msg) => {
-      log(this.#loginData.accountName, `Logged off, reconnecting! (${eresult}, ${msg})`)
+      log(TAG, `Logged off, reconnecting! (${eresult}, ${msg})`)
 
-      this.login(this.#loginData.accountName, this.#loginData.password, this.#loginData.authCode || '')
+      this.login(TAG, this.#loginData.password, this.#loginData.authCode || '')
     });
 
     this.#steamClient.on('loggedOn', (details, parental) => {
-      log(this.#loginData.accountName, `Log on OK`)
+      log(TAG, `Log on OK`)
 
       // Fixes reconnecting to CS:GO GC since node-steam-user still assumes we're playing 730
       // and never sends the appLaunched event to node-globaloffensive
@@ -99,7 +102,7 @@ export default class Bot extends EventEmitter {
 
       if (this.#relogin) {
         // Don't check ownership cache since the event isn't always emitted on relogin
-        log(this.#loginData.accountName, "Initiating GC Connection, Relogin")
+        log(TAG, "Initiating GC Connection, Relogin")
         this.#steamClient.gamesPlayed([730], true);
         return;
       }
@@ -109,22 +112,22 @@ export default class Bot extends EventEmitter {
       // @ts-ignore
       this.#steamClient.once('appOwnershipCached', () => {
         if (!this.#steamClient.ownsApp(730)) {
-          log(this.#loginData.accountName, "Bot doesn't own CS:GO, retrieving free license")
+          log(TAG, "Bot doesn't own CS:GO, retrieving free license")
 
           // Request a license for CS:GO
           this.#steamClient.requestFreeLicense([730], (err, grantedPackages, grantedAppIDs) => {
-            log(this.#loginData.accountName, `Granted Packages ${grantedPackages.toString()}`);
-            log(this.#loginData.accountName, `Granted App IDs ${grantedAppIDs.toString()}`);
+            log(TAG, `Granted Packages ${grantedPackages.toString()}`);
+            log(TAG, `Granted App IDs ${grantedAppIDs.toString()}`);
 
             if (err) {
-              log(this.#loginData.accountName, 'Failed to obtain free CS:GO license');
+              log(TAG, 'Failed to obtain free CS:GO license');
             } else {
-              log(this.#loginData.accountName, 'Initiating GC Connection');
+              log(TAG, 'Initiating GC Connection');
               this.#steamClient.gamesPlayed([730], true);
             }
           });
         } else {
-          log(this.#loginData.accountName, 'Initiating GC Connection');
+          log(TAG, 'Initiating GC Connection');
           this.#steamClient.gamesPlayed([730], true);
         }
       });
@@ -186,13 +189,13 @@ export default class Bot extends EventEmitter {
     });
 
     this.#csgoClient.on('connectedToGC', () => {
-      log(this.#loginData.accountName, 'CSGO Client Ready!');
+      log(TAG, 'CSGO Client Ready!');
 
       this.loggedIn = true;
     });
 
     this.#csgoClient.on('disconnectedFromGC', (reason) => {
-      log(this.#loginData.accountName, `CSGO unready (${reason}), trying to reconnect!`);
+      log(TAG, `CSGO unready (${reason}), trying to reconnect!`);
       this.loggedIn = false;
       this.#busy = false;
 
@@ -200,13 +203,13 @@ export default class Bot extends EventEmitter {
     });
 
     this.#csgoClient.on('connectionStatus', (status) => {
-      log(this.#loginData.accountName, `GC Connection Status Update ${status}`);
+      log(TAG, `GC Connection Status Update ${status}`);
 
     });
 
     // @ts-ignore
     this.#csgoClient.on('debug', (msg) => {
-      log(this.#loginData.accountName, `CSGO Debug ${msg}`);
+      log(TAG, `CSGO Debug ${msg}`);
     });
   }
 
@@ -216,7 +219,7 @@ export default class Bot extends EventEmitter {
       this.busy = true;
       this.#currentRequest = params
 
-      log(this.#loginData.accountName, `Fetching for ${this.#currentRequest.a}`);
+      log(TAG, `Fetching for ${this.#currentRequest.a}`);
 
       if (!this.loggedIn) {
         reject('This bot is not ready');

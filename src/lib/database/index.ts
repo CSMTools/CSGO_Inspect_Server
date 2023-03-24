@@ -2,10 +2,13 @@ import { PrismaClient } from '@prisma/client'
 
 import Master from '../bot/master.js';
 import Scraper from './web_scraper/index.js';
+import { log } from '../util.js'
 
 import { SteamFriend } from '../types/DataManagementTypes.js';
 
 const prisma = new PrismaClient()
+
+const TAG = '\x1b[31mDATABASE\x1b[0m'
 
 export default class DataManager {
   requestsToday: number = 0;
@@ -18,11 +21,44 @@ export default class DataManager {
     this.#botMaster = botMaster;
 
     this.#scraper = new Scraper();
+
+    this.#init();
   }
+
+  #init() {
+    prisma.steam_users.findFirst().then(async (user) => {
+      if (!user) {
+        log(TAG, 'Creating first user')
+        try {
+          await prisma.steam_users.create({
+            data: {
+              steam_id: '76561197960266237',
+              avatar_hash: 'a627d3c0e9fe310d6ce9538c3594376522acbb00',
+              last_update: Date.now(),
+              checked_friends: false
+            }
+          })
+          log(TAG, 'Created first user')
+        } catch (e) {
+          console.log(e)
+        }
+      }
+
+      this.get100UsersFriends();
+      console.log(1)
+
+      setInterval(() => {
+        this.get100UsersFriends();
+      }, 600000)
+    })
+  }
+
   getInventory(steamId: string) {
 
   }
-  async get100UsersFriends(steamId: string) {
+
+  async get100UsersFriends() {
+    log(TAG, "Collecting friends of up to 100 users")
     let users = await prisma.steam_users.findMany({
       where: {
         checked_friends: {
@@ -32,10 +68,12 @@ export default class DataManager {
       take: 100
     })
     if (!users) {
+      log(TAG, "No friends to collect")
       return;
     }
 
     for (const user of users) {
+      console.log(user)
       let friends: {
         steam_id: string;
         avatar_hash: string;
@@ -55,6 +93,7 @@ export default class DataManager {
       if (!friends.length) {
         continue;
       }
+
       try {
         await prisma.steam_users.createMany({
           data: friends,
@@ -74,6 +113,7 @@ export default class DataManager {
       }
     }
   }
+
   async getFriendsOfUser(steamId: string): Promise<SteamFriend[]> {
     return new Promise<SteamFriend[]>(async (resolve, reject) => {
       let friends = await this.#scraper.getFriends(steamId)

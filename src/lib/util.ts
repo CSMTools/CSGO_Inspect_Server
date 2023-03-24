@@ -40,3 +40,19 @@ export function linkToInspectRequest(link: string): InspectRequest | null {
 export function getHashByAvatarURL(url: string): string | null {
   return url.match(/https:\/\/avatars\.akamai\.steamstatic\.com\/([\da-f]+)(_medium|_full)?\.(jpg|png|webp)/)?.[1] || null;
 }
+
+function random(seed: number) {
+  var x = Math.sin(seed++) * 10000;
+  return x - Math.floor(x);
+}
+
+export function getBotTag(username: string): string {
+  let seed = 0;
+  for (let i = 0; i < username.length; i++) {
+    seed += username.charCodeAt(i);
+  }
+
+  let num = Math.round(random(seed) * (47 - 30) + 30);
+
+  return `\x1b[${num}m${username}\x1b[0m`
+}
