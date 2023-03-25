@@ -13,7 +13,10 @@ export default function router(fastify) {
                 reply.send(await botMaster.inspectItem(request.query.link));
             }
             catch (e) {
-                reply.send(e);
+                reply.status(500).send({
+                    code: 500,
+                    message: e
+                });
             }
         }
         else {

@@ -44,8 +44,7 @@ export default class DataManager {
         }
       }
 
-      this.get100UsersFriends();
-      console.log(1)
+      //this.get100UsersFriends();
 
       setInterval(() => {
         this.get100UsersFriends();
@@ -67,13 +66,13 @@ export default class DataManager {
       },
       take: 100
     })
+    log(TAG, `Collecting friends of ${users.length} users`)
     if (!users) {
       log(TAG, "No friends to collect")
       return;
     }
 
     for (const user of users) {
-      console.log(user)
       let friends: {
         steam_id: string;
         avatar_hash: string;
@@ -88,9 +87,17 @@ export default class DataManager {
           last_update: Date.now(),
           checked_friends: false
         });
-      })
+      });
 
       if (!friends.length) {
+        await prisma.steam_users.update({
+          where: {
+            steam_id: user.steam_id
+          },
+          data: {
+            checked_friends: true
+          }
+        })
         continue;
       }
 
@@ -108,17 +115,24 @@ export default class DataManager {
             checked_friends: true
           }
         })
+        log(TAG, user.steam_id)
       } catch (err) {
         console.error(err);
       }
     }
+
+    log(TAG, 'Finished collecting friends')
   }
 
   async getFriendsOfUser(steamId: string): Promise<SteamFriend[]> {
     return new Promise<SteamFriend[]>(async (resolve, reject) => {
-      let friends = await this.#scraper.getFriends(steamId)
+      try {
+        let friends = await this.#scraper.getFriends(steamId);
 
-      resolve(friends)
+        resolve(friends);
+      } catch (e) {
+        resolve([]);
+      }
     })
   }
 }

@@ -20,6 +20,7 @@ export default function router(fastify: FastifyInstance) {
   fastify.get('/', function (request, reply) {
     reply.send({ hello: 'world' })
   })
+
   fastify.get<{
     Querystring: InspectQuerystring
   }>('/inspect', async function (request, reply) {
@@ -27,12 +28,16 @@ export default function router(fastify: FastifyInstance) {
       try {
         reply.send(await botMaster.inspectItem(request.query.link))
       } catch (e) {
-        reply.send(e)
+        reply.status(500).send({
+          code: 500,
+          message: e
+        })
       }
     } else {
       reply.send({})
     }
   })
+
   if (config.enable_bulk_requests) {
     fastify.get<{
       Querystring: BulkInspectQuerystring

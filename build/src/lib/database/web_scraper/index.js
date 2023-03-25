@@ -14,9 +14,13 @@ export default class Scraper {
                 resolve(friendsList);
             })
                 .catch(async (err) => {
-                if (err.status === 502) {
+                if (err.response.status >= 500) {
                     const friendsList = await this.#rateLimitedFriendsHtmlToJSON(steamId);
                     resolve(friendsList);
+                }
+                else {
+                    log(TAG, `Error ${err.response.status} for ${steamId}`);
+                    reject(err.response.status);
                 }
             });
         });
@@ -36,11 +40,13 @@ export default class Scraper {
             setTimeout(async () => {
                 log(TAG, 'Continuing');
                 this.#fetchFriends(steamId)
-                    .then(response => resolve(response.data))
+                    .then(async (response) => {
+                    resolve(await this.#friendsHtmlToJSON(response.data, steamId));
+                })
                     .catch(async (e) => {
                     resolve(await this.#rateLimitedFriendsHtmlToJSON(steamId, number + 1));
                 });
-            }, 2000 * number);
+            }, 3000 * number);
         });
     }
     #friendsHtmlToJSON(html, steamId) {
@@ -48,7 +54,7 @@ export default class Scraper {
             const friends = [];
             const $ = cheerio.load(html, null, true);
             if ($('.search_results_none').attr('style') !== 'display:none') {
-                resolve(friends);
+                return resolve(friends);
             }
             let elements = $('div.friend_block_v2');
             for (let element of elements) {

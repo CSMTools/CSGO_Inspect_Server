@@ -33,8 +33,7 @@ export default class DataManager {
                     console.log(e);
                 }
             }
-            this.get100UsersFriends();
-            console.log(1);
+            //this.get100UsersFriends();
             setInterval(() => {
                 this.get100UsersFriends();
             }, 600000);
@@ -52,12 +51,12 @@ export default class DataManager {
             },
             take: 100
         });
+        log(TAG, `Collecting friends of ${users.length} users`);
         if (!users) {
             log(TAG, "No friends to collect");
             return;
         }
         for (const user of users) {
-            console.log(user);
             let friends = [];
             (await this.getFriendsOfUser(user.steam_id)).forEach((friend) => {
                 friends.push({
@@ -68,6 +67,14 @@ export default class DataManager {
                 });
             });
             if (!friends.length) {
+                await prisma.steam_users.update({
+                    where: {
+                        steam_id: user.steam_id
+                    },
+                    data: {
+                        checked_friends: true
+                    }
+                });
                 continue;
             }
             try {
@@ -83,16 +90,23 @@ export default class DataManager {
                         checked_friends: true
                     }
                 });
+                log(TAG, user.steam_id);
             }
             catch (err) {
                 console.error(err);
             }
         }
+        log(TAG, 'Finished collecting friends');
     }
     async getFriendsOfUser(steamId) {
         return new Promise(async (resolve, reject) => {
-            let friends = await this.#scraper.getFriends(steamId);
-            resolve(friends);
+            try {
+                let friends = await this.#scraper.getFriends(steamId);
+                resolve(friends);
+            }
+            catch (e) {
+                resolve([]);
+            }
         });
     }
 }
