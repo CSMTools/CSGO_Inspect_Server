@@ -137,13 +137,16 @@ export default class Bot extends EventEmitter {
       if (this.#resolve && typeof this.#currentRequest !== 'boolean') {
         const itemData: ItemData = {
           delay: 0,
-          itemId: itemData_.itemid,
+          itemid: itemData_.itemid,
           defindex: itemData_.defindex,
           paintindex: itemData_.paintindex,
           rarity: itemData_.rarity,
           quality: itemData_.quality,
           killeatervalue: itemData_.killeatervalue || 0,
+          killeaterscoretype: itemData_.killeaterscoretype,
           paintseed: itemData_.paintseed || 0,
+          origin: itemData_.origin,
+          customname: itemData_.customname,
           s: '',
           a: '',
           d: '',
@@ -153,7 +156,7 @@ export default class Bot extends EventEmitter {
         };
 
         // Ensure the received itemid is the same as what we want
-        if (itemData.itemId !== this.#currentRequest.a) return;
+        if (itemData.itemid !== this.#currentRequest.a) return;
 
         // Clear any TTL timeout
         if (typeof this.ttlTimeout !== 'boolean') {
@@ -176,6 +179,7 @@ export default class Bot extends EventEmitter {
         itemData.m = this.#currentRequest.m;
 
         if (typeof this.#resolve !== 'boolean') {
+          delete itemData.delay;
           this.#resolve(itemData);
           this.#resolve = false;
           this.#currentRequest = false;

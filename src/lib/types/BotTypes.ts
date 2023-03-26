@@ -15,22 +15,25 @@ export type LoginConfig = {
 }
   
 export type ItemData = {
-    delay: number,
-    itemId: string,
+    delay?: number,
+    itemid: string,
     defindex: number,
     paintindex: number,
     rarity: number,
     quality: number,
+    killeaterscoretype: number | null,
     killeatervalue: number,
+    customname: string | null,
+    paintseed: number | null,
+    paintwear: number,
+    origin: number,
     s: string,
     a: string,
     d: string,
     m: string,
-    paintseed: number | null,
-    paintwear: number,
     stickers: (Sticker & {
       tint_id: number | null;
-    })[]
+    })[],
   }
   
 export type InspectRequest = {
