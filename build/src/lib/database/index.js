@@ -34,9 +34,9 @@ export default class DataManager {
                 }
             }
             //this.get100UsersFriends();
-            setInterval(() => {
-                this.get100UsersFriends();
-            }, 600000);
+            /*setInterval(() => {
+              this.get100UsersFriends();
+            }, 600000)*/
         });
     }
     getInventory(steamId) {

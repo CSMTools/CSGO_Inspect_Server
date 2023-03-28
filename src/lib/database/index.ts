@@ -46,9 +46,9 @@ export default class DataManager {
 
       //this.get100UsersFriends();
 
-      setInterval(() => {
+      /*setInterval(() => {
         this.get100UsersFriends();
-      }, 600000)
+      }, 600000)*/
     })
   }
 
