@@ -1,47 +1,19 @@
 import BotMaster from './lib/bot/master.js';
 import DataManager from './lib/database/index.js';
+import UserFileManager from './lib/files/userFiles.js';
+import index from './lib/routes/index.js';
+import inspect from './lib/routes/inspect/index.js';
+import inspectBulk from './lib/routes/inspect/bulk.js';
+import filesSave from './lib/routes/files/save.js';
+import filesGet from './lib/routes/files/get.js';
 import config from '../config.js';
 export default function router(fastify) {
     const botMaster = new BotMaster(config.logins, config.bot_settings);
     const dataManager = new DataManager(process.env.STEAM_API_KEY, botMaster);
-    fastify.get('/', function (request, reply) {
-        reply.send({ hello: 'world' });
-    });
-    fastify.get('/inspect', async function (request, reply) {
-        if (request.query.link) {
-            try {
-                reply.send(await botMaster.inspectItem(request.query.link));
-            }
-            catch (e) {
-                reply.status(500).send({
-                    code: 500,
-                    message: e
-                });
-            }
-        }
-        else {
-            reply.send({});
-        }
-    });
-    if (config.enable_bulk_requests) {
-        fastify.get('/inspect/bulk', async function (request, reply) {
-            if (config.bulk_key && !request.query.key) {
-                return reply.send({
-                    error: "No key provided."
-                });
-            }
-            if (request.query.links) {
-                let links = request.query.links.split(',');
-                if (links.length > config.max_bulk_amount) {
-                    return reply.send({
-                        error: "Max link amount exceeded."
-                    });
-                }
-                reply.send(await botMaster.inspectItemBulk(links));
-            }
-            else {
-                reply.send({});
-            }
-        });
-    }
+    const fileManager = new UserFileManager(process.cwd() + '/files');
+    index(fastify, botMaster);
+    inspect(fastify, botMaster);
+    inspectBulk(fastify, botMaster);
+    filesSave(fastify, fileManager);
+    filesGet(fastify, fileManager);
 }
