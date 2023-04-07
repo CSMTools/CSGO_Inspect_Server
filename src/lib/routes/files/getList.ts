@@ -5,16 +5,15 @@ import UserFileManager from '../../files/userFiles.js'
 interface GetQuerystring {
     userId: string;
     type: string;
-    fileId: string;
 }
 
 export default function get(fastify: FastifyInstance, fileManager: UserFileManager) {
     fastify.get<{
         Querystring: GetQuerystring
-    }>('/files/get', async function (request, reply) {
-        const { userId, type, fileId } = request.query;
+    }>('/files/getList', async function (request, reply) {
+        const { userId, type } = request.query;
 
-        if (!userId || !type || !fileId) {
+        if (!userId || !type) {
             reply.status(400).send({
                 code: 400,
                 message: 'Missing parameter(s).'
@@ -22,10 +21,10 @@ export default function get(fastify: FastifyInstance, fileManager: UserFileManag
         }
 
         try {
-            const contents = await fileManager.getFile(userId, type, fileId);
+            const list = await fileManager.getFileList(userId, type);
 
             reply.status(200).send({
-              contents
+              list
             })
         } catch (err) {
             reply.status(500).send({

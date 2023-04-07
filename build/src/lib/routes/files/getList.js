@@ -1,16 +1,16 @@
 export default function get(fastify, fileManager) {
-    fastify.get('/files/get', async function (request, reply) {
-        const { userId, type, fileId } = request.query;
-        if (!userId || !type || !fileId) {
+    fastify.get('/files/getList', async function (request, reply) {
+        const { userId, type } = request.query;
+        if (!userId || !type) {
             reply.status(400).send({
                 code: 400,
                 message: 'Missing parameter(s).'
             });
         }
         try {
-            const contents = await fileManager.getFile(userId, type, fileId);
+            const list = await fileManager.getFileList(userId, type);
             reply.status(200).send({
-                contents
+                list
             });
         }
         catch (err) {

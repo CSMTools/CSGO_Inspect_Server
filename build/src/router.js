@@ -6,6 +6,7 @@ import inspect from './lib/routes/inspect/index.js';
 import inspectBulk from './lib/routes/inspect/bulk.js';
 import filesSave from './lib/routes/files/save.js';
 import filesGet from './lib/routes/files/get.js';
+import filesGetList from './lib/routes/files/getList.js';
 import config from '../config.js';
 export default function router(fastify) {
     const botMaster = new BotMaster(config.logins, config.bot_settings);
@@ -16,4 +17,5 @@ export default function router(fastify) {
     inspectBulk(fastify, botMaster);
     filesSave(fastify, fileManager);
     filesGet(fastify, fileManager);
+    filesGetList(fastify, fileManager);
 }

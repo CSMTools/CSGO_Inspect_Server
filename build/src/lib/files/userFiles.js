@@ -38,6 +38,9 @@ export default class UserFileManager {
                 let fileId_;
                 if (err) {
                     fileId_ = '0';
+                    fs.mkdirSync(this.#constructPathToFolder(userId, type), {
+                        recursive: true
+                    });
                 }
                 else {
                     if (fileId !== null && data.includes(fileId)) {
@@ -50,6 +53,7 @@ export default class UserFileManager {
                 const pathToFile = this.#constructPathToFile(userId, type, fileId_);
                 fs.writeFile(pathToFile, contents, (err) => {
                     if (err) {
+                        console.log(err);
                         reject("File couldn't be saved.");
                     }
                     resolve(fileId_);

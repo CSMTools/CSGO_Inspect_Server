@@ -1,4 +1,4 @@
-export default function inspect(fastify, fileManager) {
+export default function save(fastify, fileManager) {
     fastify.get('/files/save', async function (request, reply) {
         const { userId, type, fileId, contents } = request.query;
         if (!userId || !type || !contents) {
@@ -14,6 +14,7 @@ export default function inspect(fastify, fileManager) {
             });
         }
         catch (err) {
+            console.log(err);
             reply.status(500).send({
                 code: 500,
                 message: err

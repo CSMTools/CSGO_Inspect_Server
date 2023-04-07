@@ -9,7 +9,7 @@ interface SaveQuerystring {
     contents: string | Buffer;
 }
 
-export default function inspect(fastify: FastifyInstance, fileManager: UserFileManager) {
+export default function save(fastify: FastifyInstance, fileManager: UserFileManager) {
     fastify.get<{
         Querystring: SaveQuerystring
     }>('/files/save', async function (request, reply) {
@@ -29,6 +29,7 @@ export default function inspect(fastify: FastifyInstance, fileManager: UserFileM
               fileId: fileId_
             })
         } catch (err) {
+            console.log(err);
             reply.status(500).send({
                 code: 500,
                 message: err
