@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify"
 
 import UserFileManager from '../../files/userFiles.js'
 
-interface SaveQuerystring {
+interface SaveBody {
     userId: string;
     type: string;
     fileId?: string;
@@ -10,10 +10,10 @@ interface SaveQuerystring {
 }
 
 export default function save(fastify: FastifyInstance, fileManager: UserFileManager) {
-    fastify.get<{
-        Querystring: SaveQuerystring
+    fastify.post<{
+        Body: SaveBody
     }>('/files/save', async function (request, reply) {
-        const { userId, type, fileId, contents } = request.query;
+        const { userId, type, fileId, contents } = request.body;
 
         if (!userId || !type || !contents) {
             reply.status(400).send({

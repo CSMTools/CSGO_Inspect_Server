@@ -114,3 +114,4 @@ yarn.lock
 /.config
 environment.d.ts
 /files
+/.yarn
