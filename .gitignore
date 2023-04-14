@@ -115,3 +115,4 @@ yarn.lock
 environment.d.ts
 /files
 /.yarn
+/build
