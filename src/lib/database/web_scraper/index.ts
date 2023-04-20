@@ -3,11 +3,20 @@ import axios, { AxiosResponse } from 'axios';
 
 import { SteamFriend } from '../../types/DataManagementTypes';
 import { getHashByAvatarURL, log } from '../../util.js';
+import Puppet from './puppet.js';
 
 const TAG = '\x1b[33mWebScraper\x1b[0m'
 
 export default class Scraper {
-    constructor() { }
+    #puppet: Puppet;
+
+    constructor() {
+        this.#puppet = new Puppet;
+
+        setTimeout(async () => {
+            console.log(await this.#puppet.getInventory("76561198826153281"));
+        }, 5000)
+    }
 
     getFriends(steamId: string): Promise<SteamFriend[]> {
         return new Promise<SteamFriend[]>(async (resolve, reject) => {
@@ -21,7 +30,7 @@ export default class Scraper {
                     resolve(friendsList);
                 })
                 .catch(async (err) => {
-                    if (err.response.status >= 500) {
+                    if (!err.response || err.response.status >= 500) {
                         const friendsList = await this.#rateLimitedFriendsHtmlToJSON(steamId);
 
                         resolve(friendsList);

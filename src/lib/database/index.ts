@@ -44,9 +44,9 @@ export default class DataManager {
         }
       }
 
-      //this.get100UsersFriends();
+      /*this.get100UsersFriends();
 
-      /*setInterval(() => {
+      setInterval(() => {
         this.get100UsersFriends();
       }, 600000)*/
     })
@@ -77,7 +77,6 @@ export default class DataManager {
         steam_id: string;
         avatar_hash: string;
         last_update: number;
-        checked_friends: boolean;
       }[] = [];
 
       (await this.getFriendsOfUser(user.steam_id)).forEach((friend) => {
@@ -85,7 +84,6 @@ export default class DataManager {
           steam_id: friend.steamId,
           avatar_hash: friend.avatar_hash,
           last_update: Date.now(),
-          checked_friends: false
         });
       });
 

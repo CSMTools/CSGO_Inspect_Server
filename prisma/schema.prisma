@@ -13,5 +13,6 @@ model steam_users {
   vac_ban         Boolean?
   trade_ban       Boolean?
   last_update     BigInt
-  checked_friends Boolean
+  checked_friends Boolean  @default(false)
+  premium         Boolean  @default(false)
 }

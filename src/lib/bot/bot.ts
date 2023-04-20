@@ -74,8 +74,10 @@ export default class Bot extends EventEmitter {
       }
     }
 
-    log(TAG, "Logging in...")
-    this.#steamClient?.logOn(this.#loginData)
+    log(TAG, "Logging in...");
+    this.#steamClient?.logOn(this.#loginData);
+
+    this.#loginData.authCode = auth;
   }
 
   #bindEvents() {
@@ -90,7 +92,16 @@ export default class Bot extends EventEmitter {
     this.#steamClient.on('disconnected', (eresult, msg) => {
       log(TAG, `Logged off, reconnecting! (${eresult}, ${msg})`)
 
-      this.login(TAG, this.#loginData.password, this.#loginData.authCode || '')
+      this.login(this.#loginData.accountName, this.#loginData.password, this.#loginData.authCode || '')
+    });
+
+    this.#steamClient.on('steamGuard', (_, callback) => {
+      log(TAG, `Steam requested Steam Guard Code.`)
+      if (!this.#loginData.authCode) {
+        return log(TAG, `Can't find Steam Guard authentication method.`)
+      }
+      let code = SteamTotp.getAuthCode(this.#loginData.authCode);
+      callback(code);
     });
 
     this.#steamClient.on('loggedOn', (details, parental) => {
