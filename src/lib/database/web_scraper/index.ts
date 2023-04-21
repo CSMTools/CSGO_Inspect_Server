@@ -3,19 +3,23 @@ import axios, { AxiosResponse } from 'axios';
 
 import { SteamFriend } from '../../types/DataManagementTypes';
 import { getHashByAvatarURL, log } from '../../util.js';
-import Puppet from './puppet.js';
+import SteamAPI from './api.js';
 
 const TAG = '\x1b[33mWebScraper\x1b[0m'
 
 export default class Scraper {
-    #puppet: Puppet;
 
     constructor() {
-        this.#puppet = new Puppet;
+        (async () => {
+            let api = new SteamAPI({
+                key: process.env.STEAM_API_KEY,
+                proxyURL: process.env.ROTATING_PROXY_URL
+            })
 
-        setTimeout(async () => {
-            console.log(await this.#puppet.getInventory("76561198826153281"));
-        }, 5000)
+            await api.getPlayerInventory("76561198826153281", "730", "2").then((result) => {
+                console.log(result.data);
+            })
+        })();
     }
 
     getFriends(steamId: string): Promise<SteamFriend[]> {

@@ -15,14 +15,20 @@ import config from '../config.js'
 
 export default function router(fastify: FastifyInstance) {
   const botMaster = new BotMaster(config.logins, config.bot_settings)
-  const dataManager = new DataManager(process.env.STEAM_API_KEY, botMaster)
-  const fileManager = new UserFileManager(process.cwd() + '/files')
+
+  if (process.env.ENABLE_WEB_SCRAPING === 'true') {
+    const dataManager = new DataManager(process.env.STEAM_API_KEY, botMaster)
+  }
 
   index(fastify, botMaster);
   inspect(fastify, botMaster);
   inspectBulk(fastify, botMaster);
-  
-  filesSave(fastify, fileManager);
-  filesGet(fastify, fileManager);
-  filesGetList(fastify, fileManager);
+
+  if (process.env.ENABLE_FILE_STORAGE) {
+    const fileManager = new UserFileManager(process.cwd() + '/files')
+    
+    filesSave(fastify, fileManager);
+    filesGet(fastify, fileManager);
+    filesGetList(fastify, fileManager);
+  }
 }
