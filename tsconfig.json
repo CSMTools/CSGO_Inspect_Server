@@ -4,7 +4,7 @@
 
   "compilerOptions": {
     "lib": ["es2022"],
-    "module": "es6",
+    "module": "esnext",
     "target": "es2022",
 
     "outDir": "build",

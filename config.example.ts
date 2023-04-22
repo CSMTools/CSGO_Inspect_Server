@@ -26,9 +26,7 @@ export default {
         // Amount of milliseconds to wait between subsequent requests to Valve (per bot)
         'request_delay': 1100,
         // Amount of milliseconds to wait until a request to Valve is timed out
-        'request_ttl': 2000,
-        // OPTIONAL: Settings for Steam User (https://github.com/DoctorMcKay/node-steam-user#options-)
-        'steam_user': {}
+        'request_ttl': 2000
     },
     // Choose which features of the server to enable
     'enabled_modules': {
@@ -38,8 +36,14 @@ export default {
     // Optionally configure a global rate limit across all endpoints
     'rate_limit': {
         'enable': false,
-        'window_ms': 60 * 60 * 1000, // 60 min
+        'timeWindow': 60 * 60 * 1000, // 60 min
         'max': 10000
+    },
+    // Caching for inspect API
+    'caching': {
+        'enable': true,
+        // How long cache should keep inspected items before re-inspecting
+        'expiration_time': 7200000
     },
     // Max amount of simultaneous requests from the same IP  (incl. WS and HTTP/HTTPS), -1 for unlimited
     'max_simultaneous_requests': 1,

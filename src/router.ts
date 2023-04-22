@@ -13,7 +13,7 @@ import filesGetList from './lib/routes/files/getList.js'
 
 import config from '../config.js'
 
-export default function router(fastify: FastifyInstance) {
+export default async function router(fastify: FastifyInstance) {
   const botMaster = new BotMaster(config.logins, config.bot_settings)
 
   if (config.enabled_modules.web_scraping) {
@@ -31,4 +31,6 @@ export default function router(fastify: FastifyInstance) {
   index(fastify, botMaster);
   inspect(fastify, botMaster);
   inspectBulk(fastify, botMaster);
+
+  return;
 }
