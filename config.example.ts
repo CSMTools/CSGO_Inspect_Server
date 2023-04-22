@@ -30,6 +30,11 @@ export default {
         // OPTIONAL: Settings for Steam User (https://github.com/DoctorMcKay/node-steam-user#options-)
         'steam_user': {}
     },
+    // Choose which features of the server to enable
+    'enabled_modules': {
+        'file_storage': true,
+        'web_scraping': true
+    },
     // Optionally configure a global rate limit across all endpoints
     'rate_limit': {
         'enable': false,
