@@ -20,7 +20,10 @@ export default function inspect(fastify: FastifyInstance, botMaster: BotMaster) 
                 })
             }
         } else {
-            reply.send({})
+            reply.status(400).send({
+                code: 400,
+                message: "No link provided."
+            })
         }
     })
 }
