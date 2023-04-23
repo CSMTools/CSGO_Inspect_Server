@@ -3,7 +3,7 @@ import GlobalOffensive from 'globaloffensive'
 import SteamTotp from 'steam-totp'
 import { EventEmitter } from 'events'
 
-import { log, linkToInspectRequest, isInspectLinkValid, getBotTag } from "../util.js"
+import { log, linkToInspectRequest, isInspectLinkValid, getBotTag, sleep } from "../util.js"
 
 import login_errors from "../enum/BOT_LOGIN_ERRORS.js"
 
@@ -51,11 +51,14 @@ export default class Bot extends EventEmitter {
     }, 30 * 60 * 1000 + variance);
   }
 
-  login(username: string, password: string, auth: string) {
+  async login(username: string, password: string, auth: string) {
     TAG = getBotTag(username);
     this.loggedIn = false;
 
-    if (this.#steamClient) this.#steamClient.logOff();
+    if (this.#steamClient) {
+      this.#steamClient.logOff();
+      await sleep(1000)
+    }
 
     this.#loginData = {
       accountName: username,
@@ -69,7 +72,7 @@ export default class Bot extends EventEmitter {
         this.#loginData.authCode = auth;
       } else {
         // Generate the code from the shared_secret
-        log(TAG, "Generating 2FA code from shared_secret.")
+        log(TAG, "Generating 2FA code from shared_secret")
         this.#loginData.twoFactorCode = SteamTotp.getAuthCode(auth);
       }
     }
@@ -78,6 +81,8 @@ export default class Bot extends EventEmitter {
     this.#steamClient?.logOn(this.#loginData);
 
     this.#loginData.authCode = auth;
+
+    return;
   }
 
   #bindEvents() {
@@ -92,11 +97,11 @@ export default class Bot extends EventEmitter {
     this.#steamClient.on('disconnected', (eresult, msg) => {
       log(TAG, `Logged off, reconnecting! (${eresult}, ${msg})`)
 
-      this.login(this.#loginData.accountName, this.#loginData.password, this.#loginData.authCode || '')
+      this.login(this.#loginData.accountName, this.#loginData.password, this.#loginData.authCode || '');
     });
 
     this.#steamClient.on('steamGuard', (_, callback) => {
-      log(TAG, `Steam requested Steam Guard Code.`)
+      log(TAG, `Steam requested Steam Guard Code`)
 
       if (!this.#loginData.authCode) {
         return log(TAG, `Can't find Steam Guard authentication method.`)

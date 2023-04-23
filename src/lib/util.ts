@@ -56,3 +56,7 @@ export function getBotTag(username: string): string {
 
   return `\x1b[${num}m${username}\x1b[0m`
 }
+
+export function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
