@@ -15,12 +15,16 @@ model steam_users {
   last_update     BigInt
   checked_friends Boolean  @default(false)
   premium         Boolean  @default(false)
+  items           steam_item[]
 
   @@index([steam_id])
 }
 
 model steam_item {
-  id          String @id @unique
-  data        Json
-  last_update BigInt
+  id           String @id @unique
+  data         Json
+  owner        steam_users @relation(fields: [ownerId], references: [steam_id])
+  ownerId      String // relation scalar field  (used in the `@relation` attribute above)
+  ownerHistory String[]
+  last_update  BigInt
 }

@@ -5,6 +5,7 @@ import Scraper from './web_scraper/index.js';
 import { log } from '../util.js'
 
 import { SteamFriend } from '../types/DataManagementTypes.js';
+import { ItemData } from '../types/BotTypes.js';
 
 const prisma = new PrismaClient()
 
@@ -44,19 +45,59 @@ export default class DataManager {
         }
       }
 
-      /*this.get100UsersFriends();
+      /*this.collect100UsersFriends();
 
       setInterval(() => {
-        this.get100UsersFriends();
+        this.collect100UsersFriends();
       }, 600000)*/
     })
   }
 
-  getInventory(steamId: string) {
+  collectInventory(steamId: string) {
 
   }
 
-  async get100UsersFriends() {
+  async getItemsByOwner(steamId: string) {
+    let parsedItems: ItemData[] = [];
+
+    let items = await prisma.steam_item.findMany({
+      where: {
+        ownerId: steamId
+      }
+    })
+
+    for (let i = 0; i < items.length; i++) {
+      let item = items[i];
+
+      parsedItems.push(item.data as unknown as ItemData);
+    }
+
+    return parsedItems;
+  }
+
+  async createOrUpdateItem(itemId: string, ownerId: string, data: ItemData) {
+    await prisma.steam_item.upsert({
+      where: {
+        id: itemId
+      },
+      create: {
+        id: itemId,
+        ownerId,
+        data: JSON.stringify(data),
+        last_update: Date.now()
+      },
+      update: {
+        ownerId,
+        data: JSON.stringify(data),
+        ownerHistory: {
+          push: ownerId
+        },
+        last_update: Date.now()
+      }
+    })
+  }
+
+  async collect100UsersFriends() {
     log(TAG, "Collecting friends of up to 100 users")
     let users = await prisma.steam_users.findMany({
       where: {
@@ -79,7 +120,7 @@ export default class DataManager {
         last_update: number;
       }[] = [];
 
-      (await this.getFriendsOfUser(user.steam_id)).forEach((friend) => {
+      (await this.collectFriendsOfUser(user.steam_id)).forEach((friend) => {
         friends.push({
           steam_id: friend.steamId,
           avatar_hash: friend.avatar_hash,
@@ -122,7 +163,7 @@ export default class DataManager {
     log(TAG, 'Finished collecting friends')
   }
 
-  async getFriendsOfUser(steamId: string): Promise<SteamFriend[]> {
+  async collectFriendsOfUser(steamId: string): Promise<SteamFriend[]> {
     return new Promise<SteamFriend[]>(async (resolve, reject) => {
       try {
         let friends = await this.#scraper.getFriends(steamId);
