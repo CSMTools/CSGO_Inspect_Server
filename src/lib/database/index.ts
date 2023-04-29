@@ -76,25 +76,32 @@ export default class DataManager {
   }
 
   async createOrUpdateItem(itemId: string, ownerId: string, data: ItemData) {
-    await prisma.steam_item.upsert({
-      where: {
-        id: itemId
-      },
-      create: {
-        id: itemId,
-        ownerId,
-        data: JSON.stringify(data),
-        last_update: Date.now()
-      },
-      update: {
-        ownerId,
-        data: JSON.stringify(data),
-        ownerHistory: {
-          push: ownerId
+    try {
+      await prisma.steam_item.upsert({
+        where: {
+          id: itemId
         },
-        last_update: Date.now()
-      }
-    })
+        create: {
+          id: itemId,
+          ownerId,
+          data: JSON.stringify(data),
+          ownerHistory: [ownerId],
+          last_update: Date.now()
+        },
+        update: {
+          ownerId,
+          data: JSON.stringify(data),
+          ownerHistory: {
+            push: ownerId
+          },
+          last_update: Date.now()
+        }
+      })
+      
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   async collect100UsersFriends() {
