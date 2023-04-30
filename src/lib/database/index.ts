@@ -75,7 +75,7 @@ export default class DataManager {
     return parsedItems;
   }
 
-  async createOrUpdateItem(itemId: string, ownerId: string, data: ItemData) {
+  async createOrUpdateItem(itemId: string, ownerId: string, data: ItemData): Promise<boolean> {
     try {
       await prisma.steam_item.upsert({
         where: {
@@ -101,6 +101,20 @@ export default class DataManager {
       return true;
     } catch (e) {
       return false;
+    }
+  }
+
+  async getItem(itemId: string) {
+    try {
+      let item = await prisma.steam_item.findFirstOrThrow({
+        where: {
+          id: itemId
+        }
+      })
+
+      return item;
+    } catch (e) {
+      return e;
     }
   }
 

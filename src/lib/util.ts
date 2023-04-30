@@ -10,10 +10,10 @@ export function isInspectLinkValid(link: string): boolean {
 
 export function linkToInspectRequest(link: string): InspectRequest | null {
   const request: InspectRequest = {
-    s: "",
-    a: "",
-    d: "",
-    m: "",
+    s: "0",
+    a: "0",
+    d: "0",
+    m: "0",
     time: 0
   };
 
