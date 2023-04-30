@@ -4,21 +4,31 @@ import Bot from './bot.js';
 import { linkToInspectRequest } from '../util.js';
 
 import { BotSettings, InspectRequest, ItemData, LoginConfig } from '../types/BotTypes';
+import DataManager from '../database/index.js';
+import InspectCache from './cache.js';
 
 export default class Master extends EventEmitter {
   #inspectQueue: (InspectRequest | null)[] = [];
   #botsBusyIndex: boolean[] = [];
+  #database: DataManager | null;
   #botsAvailable: number = 0;
   #botsNotBusy: number = 0;
   #settings: BotSettings;
   #logins: LoginConfig[];
   #bots: Bot[] = [];
+  #inspectCache: InspectCache | null = null;
 
-  constructor(logins: LoginConfig[], settings: BotSettings) {
+  constructor(logins: LoginConfig[], settings: BotSettings, database: DataManager | null = null) {
     super();
 
     this.#logins = logins;
     this.#settings = settings;
+
+    this.#database = database;
+
+    if (database !== null) {
+      this.#inspectCache = new InspectCache(database);
+    }
 
     this.#createBots();
   }
@@ -102,6 +112,10 @@ export default class Master extends EventEmitter {
 
   inspectItem(link: string): Promise<ItemData> {
     return new Promise((resolve, reject) => {
+      if (this.#inspectCache) {
+        let cachedItem: ItemData | null = this.#inspectCache.getItemByInspectFields()
+      }
+
       if (!this.#botsAvailable) {
         reject('No bots available');
       }

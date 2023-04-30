@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 
 import Master from '../bot/master.js';
 import Scraper from './web_scraper/index.js';
-import { log } from '../util.js'
+import { inspectRequestToInspectFields, log } from '../util.js'
 
 import { SteamFriend } from '../types/DataManagementTypes.js';
 import { ItemData } from '../types/BotTypes.js';
@@ -14,12 +14,10 @@ const TAG = '\x1b[31mDATABASE\x1b[0m'
 export default class DataManager {
   requestsToday: number = 0;
   #steamApiKey: string;
-  #botMaster: Master;
   #scraper: Scraper;
 
-  constructor(steamApiKey: string, botMaster: Master) {
+  constructor(steamApiKey: string) {
     this.#steamApiKey = steamApiKey;
-    this.#botMaster = botMaster;
 
     this.#scraper = new Scraper();
 
@@ -75,20 +73,24 @@ export default class DataManager {
     return parsedItems;
   }
 
-  async createOrUpdateItem(itemId: string, ownerId: string, data: ItemData): Promise<boolean> {
+  async createOrUpdateItem(itemId: string, ownerId: string, isFromMarket: boolean, data: ItemData): Promise<boolean> {
     try {
+      let inspectItemFields = inspectRequestToInspectFields({...data, time: 0});
+
       await prisma.steam_item.upsert({
         where: {
           id: itemId
         },
         create: {
           id: itemId,
+          last_inspect_fields: inspectItemFields,
           ownerId,
           data: JSON.stringify(data),
           ownerHistory: [ownerId],
           last_update: Date.now()
         },
         update: {
+          last_inspect_fields: inspectItemFields,
           ownerId,
           data: JSON.stringify(data),
           ownerHistory: {
@@ -104,7 +106,7 @@ export default class DataManager {
     }
   }
 
-  async getItem(itemId: string) {
+  async getItemById(itemId: string): Promise<ItemData|null> {
     try {
       let item = await prisma.steam_item.findFirstOrThrow({
         where: {
@@ -112,9 +114,23 @@ export default class DataManager {
         }
       })
 
-      return item;
+      return item.data as unknown as ItemData;
     } catch (e) {
-      return e;
+      return null;
+    }
+  }
+
+  async getItemByInspectFields(inspectFields: string): Promise<ItemData|null> {
+    try {
+      let item = await prisma.steam_item.findFirstOrThrow({
+        where: {
+          last_inspect_fields: inspectFields
+        }
+      })
+
+      return item.data as unknown as ItemData;
+    } catch (e) {
+      return null;
     }
   }
 

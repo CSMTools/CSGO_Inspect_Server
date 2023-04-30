@@ -21,10 +21,13 @@ model steam_users {
 }
 
 model steam_item {
-  id           String @id @unique
-  data         Json
-  owner        steam_users @relation(fields: [ownerId], references: [steam_id])
-  ownerId      String // relation scalar field  (used in the `@relation` attribute above)
-  ownerHistory String[]
-  last_update  BigInt
+  id                  String @unique 
+  last_inspect_fields String // Easy way to get item with caching, for example: M4313928510512678228A30019827328D14610838559007360636
+  data                Json
+  owner               steam_users @relation(fields: [ownerId], references: [steam_id])
+  ownerId             String // relation scalar field  (used in the `@relation` attribute above)
+  ownerHistory        String[]
+  last_update         BigInt
+
+  @@id([id, last_inspect_fields])
 }

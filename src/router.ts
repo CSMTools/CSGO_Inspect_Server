@@ -14,10 +14,13 @@ import filesGetList from './lib/routes/files/getList.js'
 import config from '../config.js'
 
 export default async function router(fastify: FastifyInstance) {
-  const botMaster = new BotMaster(config.logins, config.bot_settings)
+  let botMaster;
 
-  if (config.enabled_modules.web_scraping) {
-    const dataManager = new DataManager(process.env.STEAM_API_KEY, botMaster)
+  if (config.enabled_modules.database) {
+    const dataManager = new DataManager(process.env.STEAM_API_KEY)
+    botMaster = new BotMaster(config.logins, config.bot_settings)
+  } else {
+    botMaster = new BotMaster(config.logins, config.bot_settings)
   }
 
   if (config.enabled_modules.file_storage) {

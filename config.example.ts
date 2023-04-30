@@ -31,7 +31,7 @@ export default {
     // Choose which features of the server to enable
     'enabled_modules': {
         'file_storage': true,
-        'web_scraping': true
+        'database': true
     },
     // Optionally configure a global rate limit across all endpoints
     'rate_limit': {
