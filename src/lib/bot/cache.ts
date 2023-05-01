@@ -1,8 +1,8 @@
-import { getItemIDFromItem } from "../database/itemId";
-import DataManager from "../database";
+import { getItemIDFromItem } from "../database/itemId.js";
+import DataManager from "../database/index.js";
 
 import { ItemData } from "../types/BotTypes";
-import { log } from "../util";
+import { log } from "../util.js";
 
 const TAG = '\x1b[33mCACHE\x1b[0m'
 

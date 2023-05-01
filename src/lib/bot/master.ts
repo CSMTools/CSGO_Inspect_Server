@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 
 import Bot from './bot.js';
-import { linkToInspectRequest } from '../util.js';
+import { inspectRequestToInspectFields, linkToInspectRequest } from '../util.js';
 
 import { BotSettings, InspectRequest, ItemData, LoginConfig } from '../types/BotTypes';
 import DataManager from '../database/index.js';
@@ -111,11 +111,7 @@ export default class Master extends EventEmitter {
   }
 
   inspectItem(link: string): Promise<ItemData> {
-    return new Promise((resolve, reject) => {
-      if (this.#inspectCache) {
-        let cachedItem: ItemData | null = this.#inspectCache.getItemByInspectFields()
-      }
-
+    return new Promise(async (resolve, reject) => {
       if (!this.#botsAvailable) {
         reject('No bots available');
       }
@@ -125,6 +121,15 @@ export default class Master extends EventEmitter {
       if (params === null) {
         reject('Invalid link');
         return;
+      }
+
+      if (this.#inspectCache) {
+        let inspectFields = inspectRequestToInspectFields(params);
+        let cachedItem: ItemData | null = await this.#inspectCache.getItemByInspectFields(inspectFields);
+
+        if (cachedItem !== null) {
+          return resolve(cachedItem);
+        }
       }
 
       this.#inspectQueue.push(params);
@@ -137,7 +142,15 @@ export default class Master extends EventEmitter {
             return reject(res);
           }
         } else if (res.a = params.a) {
-          _this.removeListener('inspectResult', cb)
+          _this.removeListener('inspectResult', cb);
+
+          if (_this.#inspectCache) {
+            if (res.s !== '0') {
+              _this.#inspectCache.createOrUpdateItem(res, res.s, false);
+            } else {
+              _this.#inspectCache.createOrUpdateItem(res, res.m, true);
+            }
+          }
 
           resolve(res);
         }
