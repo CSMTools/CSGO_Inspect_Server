@@ -16,9 +16,16 @@ export default function save(fastify: FastifyInstance, fileManager: UserFileMana
         const { userId, type, fileId, contents } = request.body;
 
         if (!userId || !type || !contents) {
-            reply.status(400).send({
+            return reply.status(400).send({
                 code: 400,
                 message: 'Missing parameter(s).'
+            })
+        }
+
+        if (userId === 'localsystem') {
+            return reply.status(400).send({
+                code: 400,
+                message: 'Invalid userId: localsystem'
             })
         }
 

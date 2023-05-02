@@ -45,6 +45,7 @@ export default {
         // How long cache should keep inspected items before re-inspecting
         'expiration_time': 7200000
     },
+    'file_location': process.cwd() + '/files',
     // Max amount of simultaneous requests from the same IP  (incl. WS and HTTP/HTTPS), -1 for unlimited
     'max_simultaneous_requests': 1,
     // Bool to enable game file updates from the SteamDB Github tracker (updated item definitions, images, names)

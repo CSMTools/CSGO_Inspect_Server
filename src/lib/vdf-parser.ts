@@ -8,7 +8,7 @@
 // duplicate token can be undefined. If it is, checks are skipped later on.
 // it is expected for DUPLICATE_TOKEN to be a string identifier appended to
 // duplicate keys
-function parse (text, DUPLICATE_TOKEN) {
+export function parse (text: string, DUPLICATE_TOKEN?: string) {
   if (typeof text !== 'string') {
     throw new TypeError('VDF.parse: Expecting text parameter to be a string')
   }
@@ -25,7 +25,7 @@ function parse (text, DUPLICATE_TOKEN) {
   let stack = [obj]
   let expectBracket = false
   let line = ''
-  let m = ''
+  let m: RegExpExecArray | null = null;
 
   let reKV = new RegExp(
     '^("((?:\\\\.|[^\\\\"])+)"|([a-z0-9\\-\\_]+))' +
@@ -143,11 +143,7 @@ function parse (text, DUPLICATE_TOKEN) {
   return obj
 }
 
-function _dump (obj, pretty, level, DUPLICATE_TOKEN) {
-  if (typeof obj !== 'object') {
-    throw new TypeError('VDF.stringify: a key has value of type other than string or object')
-  }
-
+function _dump (obj: any, pretty: boolean, level: number, DUPLICATE_TOKEN?: string) {
   let indent = '\t'
   let buf = ''
   let lineIndent = ''
@@ -179,21 +175,8 @@ function _dump (obj, pretty, level, DUPLICATE_TOKEN) {
   return buf
 }
 
-function stringify (obj, pretty, DUPLICATE_TOKEN) {
-  if (typeof obj !== 'object') {
-    throw new TypeError('VDF.stringify: First input parameter is not an object')
-  }
-
-
-  if(DUPLICATE_TOKEN && typeof DUPLICATE_TOKEN !== 'string') {
-    throw new TypeError('VDF.stringify: Expecting DUPLICATE_TOKEN parameter to be a string if defined')
-  }
-
-  pretty = (typeof pretty === 'boolean' && pretty)
-
+export function stringify (obj: any, pretty: boolean, DUPLICATE_TOKEN?: string) {
   return _dump(obj, pretty, 0, DUPLICATE_TOKEN)
 }
 
-exports.parse = parse
-exports.dump = stringify
-exports.stringify = stringify
+export const dump = stringify;

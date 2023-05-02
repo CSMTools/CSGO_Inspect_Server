@@ -24,7 +24,7 @@ export default async function router(fastify: FastifyInstance) {
   }
 
   if (config.enabled_modules.file_storage) {
-    const fileManager = new UserFileManager(process.cwd() + '/files')
+    const fileManager = new UserFileManager(config.file_location)
     
     filesSave(fastify, fileManager);
     filesGet(fastify, fileManager);

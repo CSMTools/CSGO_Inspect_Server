@@ -1,12 +1,17 @@
 import { FastifyInstance } from "fastify"
 
 import BotMaster from '../../bot/master.js'
+import config from "../../../../config.js"
 
 interface InspectQuerystring {
     link: string
 }
 
 export default function inspect(fastify: FastifyInstance, botMaster: BotMaster) {
+    if (config.enabled_modules.file_storage) {
+        
+    }
+    
     fastify.get<{
         Querystring: InspectQuerystring
     }>('/inspect', async function (request, reply) {

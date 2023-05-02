@@ -14,9 +14,16 @@ export default function get(fastify: FastifyInstance, fileManager: UserFileManag
         const { userId, type } = request.query;
 
         if (!userId || !type) {
-            reply.status(400).send({
+            return reply.status(400).send({
                 code: 400,
                 message: 'Missing parameter(s).'
+            })
+        }
+
+        if (userId === 'localsystem') {
+            return reply.status(400).send({
+                code: 400,
+                message: 'Invalid userId: localsystem'
             })
         }
 
