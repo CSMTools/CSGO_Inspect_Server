@@ -6,6 +6,7 @@ import { inspectRequestToInspectFields, log } from '../util.js'
 
 import { SteamFriend } from '../types/DataManagementTypes.js';
 import { ItemData } from '../types/BotTypes.js';
+import GameData from './game-data.js';
 
 const prisma = new PrismaClient()
 
@@ -22,6 +23,8 @@ export default class DataManager {
     this.#scraper = new Scraper();
 
     this.#init();
+
+    new GameData;
   }
 
   #init() {

@@ -23,13 +23,13 @@ export default class UserFileManager {
         }
     }
 
-    getFile(userId: string, type: string, fileId: string) {
+    getFile(userId: string, type: string, fileId: string): Promise<string> {
         return new Promise((resolve, reject) => {
             const pathToFile = this.#constructPathToFile(userId, type, fileId);
 
             fs.readFile(pathToFile, (err, data) => {
-                if (err) {
-                    reject("No such file exists.")
+                if (err || !data) {
+                    return reject("No such file exists.")
                 }
 
                 resolve(data.toString());

@@ -8,7 +8,7 @@
 // duplicate token can be undefined. If it is, checks are skipped later on.
 // it is expected for DUPLICATE_TOKEN to be a string identifier appended to
 // duplicate keys
-export function parse (text: string, DUPLICATE_TOKEN?: string) {
+export function parse(text: string, DUPLICATE_TOKEN?: string) {
   if (typeof text !== 'string') {
     throw new TypeError('VDF.parse: Expecting text parameter to be a string')
   }
@@ -21,8 +21,8 @@ export function parse (text: string, DUPLICATE_TOKEN?: string) {
 
   let lines = text.split('\n')
 
-  let obj = {}
-  let stack = [obj]
+  let obj: any = {}
+  let stack: any[] = [obj]
   let expectBracket = false
   let line = ''
   let m: RegExpExecArray | null = null;
@@ -50,7 +50,7 @@ export function parse (text: string, DUPLICATE_TOKEN?: string) {
     // import another ENTIRE file to import documents with.
 
     // implemented for now to stop system from erroring out.
-    if(line[0] === '#' ) {
+    if (line[0] === '#') {
       continue
     }
 
@@ -65,7 +65,7 @@ export function parse (text: string, DUPLICATE_TOKEN?: string) {
     }
 
     // one level back
-    if (line[ 0 ] === '}') {
+    if (line[0] === '}') {
       stack.pop()
       continue
     }
@@ -85,14 +85,14 @@ export function parse (text: string, DUPLICATE_TOKEN?: string) {
       // qval = 6
       // vq_end = 7
       // val = 8
-      let key = (typeof m[ 2 ] !== 'undefined') ? m[ 2 ] : m[ 3 ]
-      let val = (typeof m[ 6 ] !== 'undefined') ? m[ 6 ] : m[ 8 ]
+      let key = (typeof m[2] !== 'undefined') ? m[2] : m[3]
+      let val = (typeof m[6] !== 'undefined') ? m[6] : m[8]
 
       if (typeof val === 'undefined') {
         // this is a duplicate key so we need to do special increment
         // check to see if duplicate token is declared. if it's undefined, the user didn't set it/
         // so skip this below operation. instead, proceed to the original behavior of merging.
-        if(DUPLICATE_TOKEN && stack[stack.length -1][ key ]) {
+        if (DUPLICATE_TOKEN && stack[stack.length - 1][key]) {
           // if we are in here, the user has opted for not overriding duplicate keys
 
           // we don't know how many duplicate keys exist, so we have to while loop
@@ -100,36 +100,36 @@ export function parse (text: string, DUPLICATE_TOKEN?: string) {
           let newKeyFound = false; // by default, no idea where we are
           let int = 2; // start at 2, the unmodified first one is "1".
           let base = key; // the base of what the key variable should have each time
-          
-          while(!newKeyFound) { 
+
+          while (!newKeyFound) {
             key = base + `-${DUPLICATE_TOKEN}-${int}`; // what the key shoud look like
 
             // if this key has an assigned value already, keep going up
-            if( stack[stack.length -1][key] ) {
+            if (stack[stack.length - 1][key]) {
               int++;
               continue;
-            // this key does NOT have anything assigned. Assign it.
+              // this key does NOT have anything assigned. Assign it.
             } else {
-              stack[stack.length -1][key] = {} // assign it
+              stack[stack.length - 1][key] = {} // assign it
               newKeyFound = true // break loop
             }
           }
         }
 
         // new key time!
-        if (!stack[stack.length - 1][ key ]) {
-          stack[stack.length - 1][ key ] = {}
+        if (!stack[stack.length - 1][key]) {
+          stack[stack.length - 1][key] = {}
         }
 
-        stack.push(stack[stack.length - 1][ key ])
+        stack.push(stack[stack.length - 1][key])
         expectBracket = true
       } else {
-        if (!m[ 7 ] && !m[ 8 ]) {
-          line += '\n' + lines[ ++i ]
+        if (!m[7] && !m[8]) {
+          line += '\n' + lines[++i]
           continue
         }
 
-        stack[stack.length - 1][ key ] = val
+        stack[stack.length - 1][key] = val
       }
 
       done = true
@@ -143,7 +143,7 @@ export function parse (text: string, DUPLICATE_TOKEN?: string) {
   return obj
 }
 
-function _dump (obj: any, pretty: boolean, level: number, DUPLICATE_TOKEN?: string) {
+function _dump(obj: any, pretty: boolean, level: number, DUPLICATE_TOKEN?: string) {
   let indent = '\t'
   let buf = ''
   let lineIndent = ''
@@ -161,21 +161,21 @@ function _dump (obj: any, pretty: boolean, level: number, DUPLICATE_TOKEN?: stri
     let finalKey = key
     // if a duplicate token was defined, check to see if this key has it.
     // if it does, override the key in this context with only the original key value by taking index 0
-    if(DUPLICATE_TOKEN && key.includes(DUPLICATE_TOKEN)) finalKey = key.split(`-${DUPLICATE_TOKEN}-`)[0]
-    
+    if (DUPLICATE_TOKEN && key.includes(DUPLICATE_TOKEN)) finalKey = key.split(`-${DUPLICATE_TOKEN}-`)[0]
+
     // in the below section, we update finalKey instead of key in this area because
     // we want the stripped key as the key. BUT, we want the ORIGINAL keys data.
-    if (typeof obj[ finalKey ] === 'object') {
+    if (typeof obj[finalKey] === 'object') {
       buf += [lineIndent, '"', finalKey, '"\n', lineIndent, '{\n', _dump(obj[key], pretty, level + 1, DUPLICATE_TOKEN), lineIndent, '}\n'].join('')
     } else {
-      buf += [lineIndent, '"', finalKey, '"', indent, indent, '"', String(obj[ key ]), '"\n'].join('')
+      buf += [lineIndent, '"', finalKey, '"', indent, indent, '"', String(obj[key]), '"\n'].join('')
     }
   }
 
   return buf
 }
 
-export function stringify (obj: any, pretty: boolean, DUPLICATE_TOKEN?: string) {
+export function stringify(obj: any, pretty: boolean, DUPLICATE_TOKEN?: string) {
   return _dump(obj, pretty, 0, DUPLICATE_TOKEN)
 }
 
