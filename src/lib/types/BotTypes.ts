@@ -15,6 +15,7 @@ export type LoginConfig = {
 }
   
 export type ItemData = {
+    item: {}
     delay?: number,
     itemid: string,
     defindex: number,
@@ -38,14 +39,15 @@ export type ItemData = {
       name?: string;
     })[],
     // Additional data:
-    additional: {
+    additional?: {
       imageurl: string;
       floatData: {
         min: number,
         max: number
-      },
+      };
       weapon_type: string;
       item_name: string;
+      rarity_name: string;
     }
   }
   

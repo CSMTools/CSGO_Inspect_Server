@@ -146,6 +146,19 @@ export default class GameData {
             return item;
         };
 
+        if (!item.additional) {
+            item.additional = {
+                imageurl: '',
+                floatData: {
+                    min: 0,
+                    max: 1
+                },
+                weapon_type: '',
+                item_name: '',
+                rarity_name: ''
+            };
+        }
+
         // Get sticker codename/name
         const stickerKits = this.#items_game.sticker_kits;
 
@@ -245,20 +258,19 @@ export default class GameData {
         });
 
         if (rarityKey) {
-            const rarity = this.items_game['rarities'][rarityKey];
+            const rarity = this.#items_game['rarities'][rarityKey];
 
             // Assumes weapons always have a float above 0 and that other items don't
             // TODO: Improve weapon check if this isn't robust
-            iteminfo['rarity_name'] = this.csgo_english
-            [rarity[iteminfo.floatvalue > 0 ? 'loc_key_weapon' : 'loc_key']];
+            item.additional.rarity_name = this.#csgo_english[rarity[item.paintwear > 0 ? 'loc_key_weapon' : 'loc_key']];
         }
 
         // Get the quality name (Souvenir, Stattrak, etc...)
-        const qualityKey = Object.keys(this.items_game['qualities']).find((key) => {
-            return parseInt(this.items_game['qualities'][key]['value']) === iteminfo.quality;
+        const qualityKey = Object.keys(this.#items_game['qualities']).find((key) => {
+            return parseInt(this.#items_game['qualities'][key]['value']) === item.quality;
         });
 
-        iteminfo['quality_name'] = this.csgo_english[qualityKey];
+        iteminfo['quality_name'] = this.#csgo_english[qualityKey];
 
         // Get the origin name
         const origin = this.schema['originNames'].find((o) => o.origin === iteminfo.origin);
