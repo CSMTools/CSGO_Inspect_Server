@@ -4,6 +4,7 @@ import config from "../../../config.js";
 import UserFileManager from "../files/userFiles.js";
 import * as vdf from '../vdf-parser.js';
 import { log } from '../util.js';
+import { ItemData } from '../types/BotTypes.js';
 
 const floatNames = [{
     range: [0, 0.07],
@@ -135,6 +136,186 @@ export default class GameData {
 
             this.#schema = JSON.parse(file)['result'];
         })
+    }
+
+    /*
+        Given returned iteminfo, finds the item's min/max float, name, weapon type, and image url using CSGO game data
+    */
+    addAdditionalItemProperties(item: ItemData) {
+        if (!this.#items_game || !this.#items_game_cdn || !this.#csgo_english) {
+            return item;
+        };
+
+        // Get sticker codename/name
+        const stickerKits = this.#items_game.sticker_kits;
+
+        for (const sticker of item.stickers || []) {
+            const kit = stickerKits[sticker.sticker_id];
+
+            if (!kit) {
+                continue;
+            };
+
+            sticker.codename = kit.name;
+            sticker.material = kit.sticker_material;
+
+            let name = this.#csgo_english[kit.item_name.replace('#', '')];
+
+            if (sticker.tint_id) {
+                name += ` (${this.#csgo_english[`Attrib_SprayTintValue_${sticker.tint_id}`]})`;
+            }
+
+            if (name) sticker.name = name;
+        }
+
+        // Get the skin name
+        let skin_name = '';
+
+        if (item.paintindex in this.#items_game['paint_kits']) {
+            skin_name = '_' + this.#items_game['paint_kits'][item.paintindex]['name'];
+
+            if (skin_name == '_default') {
+                skin_name = '';
+            }
+        }
+
+        // Get the weapon name
+        let weapon_name: string = '';
+
+        if (item.defindex in this.#items_game['items']) {
+            weapon_name = this.#items_game['items'][item.defindex]['name'];
+        }
+
+        // Get the image url
+        let image_name = weapon_name + skin_name;
+
+        if (image_name in this.#items_game_cdn) {
+            item.additional.imageurl = this.#items_game_cdn[image_name];
+        }
+
+        // Get the paint data and code name
+        let code_name;
+        let paint_data;
+
+        if (item.paintindex in this.#items_game['paint_kits']) {
+            code_name = this.#items_game['paint_kits'][item.paintindex]['description_tag'].replace('#', '');
+            paint_data = this.#items_game['paint_kits'][item.paintindex];
+        }
+
+        // Get the min float
+        if (paint_data && 'wear_remap_min' in paint_data) {
+            item.additional.floatData.min = parseFloat(paint_data['wear_remap_min']);
+        }
+        else item.additional.floatData.min = 0.06;
+
+        // Get the max float
+        if (paint_data && 'wear_remap_max' in paint_data) {
+            item.additional.floatData.max = parseFloat(paint_data['wear_remap_max']);
+        }
+        else item.additional.floatData.max = 0.8;
+
+        let weapon_data: any;
+
+        if (item.defindex in this.#items_game['items']) {
+            weapon_data = this.#items_game['items'][item.defindex];
+        }
+
+        // Get the weapon_hud
+        let weapon_hud: string = '';
+
+        if (weapon_data && 'item_name' in weapon_data) {
+            weapon_hud = weapon_data['item_name'].replace('#', '');
+        } else {
+            // need to find the weapon hud from the prefab
+            if (item.defindex in this.#items_game['items']) {
+                let prefab_val = this.#items_game['items'][item.defindex]['prefab'];
+                weapon_hud = this.#items_game['prefabs'][prefab_val]['item_name'].replace('#', '');
+            }
+        }
+
+        // Get the skin name if we can
+        if (weapon_hud in this.#csgo_english && code_name in this.#csgo_english) {
+            item.additional.weapon_type = this.#csgo_english[weapon_hud];
+            item.additional.item_name = this.#csgo_english[code_name];
+        }
+
+        // Get the rarity name (Mil-Spec Grade, Covert etc...)
+        const rarityKey = Object.keys(this.#items_game['rarities']).find((key) => {
+            return parseInt(this.#items_game['rarities'][key]['value']) === item.rarity;
+        });
+
+        if (rarityKey) {
+            const rarity = this.items_game['rarities'][rarityKey];
+
+            // Assumes weapons always have a float above 0 and that other items don't
+            // TODO: Improve weapon check if this isn't robust
+            iteminfo['rarity_name'] = this.csgo_english
+            [rarity[iteminfo.floatvalue > 0 ? 'loc_key_weapon' : 'loc_key']];
+        }
+
+        // Get the quality name (Souvenir, Stattrak, etc...)
+        const qualityKey = Object.keys(this.items_game['qualities']).find((key) => {
+            return parseInt(this.items_game['qualities'][key]['value']) === iteminfo.quality;
+        });
+
+        iteminfo['quality_name'] = this.csgo_english[qualityKey];
+
+        // Get the origin name
+        const origin = this.schema['originNames'].find((o) => o.origin === iteminfo.origin);
+
+        if (origin) {
+            iteminfo['origin_name'] = origin['name'];
+        }
+
+        // Get the wear name
+        const wearName = this.getWearName(iteminfo.floatvalue);
+        if (wearName) {
+            iteminfo['wear_name'] = wearName;
+        }
+
+        const itemName = this.getFullItemName(iteminfo);
+        if (itemName) {
+            iteminfo['full_item_name'] = itemName;
+        }
+    }
+
+    getWearName(float) {
+        const f = floatNames.find((f) => float > f.range[0] && float <= f.range[1]);
+
+        if (f) {
+            return this.csgo_english[f['name']];
+        }
+    }
+
+    getFullItemName(iteminfo) {
+        let name = '';
+
+        // Default items have the "unique" quality
+        if (iteminfo.quality !== 4) {
+            name += `${iteminfo.quality_name} `;
+        }
+
+        // Patch for items that are stattrak and unusual (ex. Stattrak Karambit)
+        if (iteminfo.killeatervalue !== null && iteminfo.quality !== 9) {
+            name += `${this.csgo_english['strange']} `;
+        }
+
+        name += `${iteminfo.weapon_type} `;
+
+        if (iteminfo.weapon_type === 'Sticker' || iteminfo.weapon_type === 'Sealed Graffiti') {
+            name += `| ${iteminfo.stickers[0].name}`;
+        }
+
+        // Vanilla items have an item_name of '-'
+        if (iteminfo.item_name && iteminfo.item_name !== '-') {
+            name += `| ${iteminfo.item_name} `;
+
+            if (iteminfo.wear_name) {
+                name += `(${iteminfo.wear_name})`;
+            }
+        }
+
+        return name.trim();
     }
 
     /*

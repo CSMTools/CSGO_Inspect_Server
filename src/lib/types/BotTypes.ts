@@ -33,7 +33,20 @@ export type ItemData = {
     m: string,
     stickers: (Sticker & {
       tint_id: number | null;
+      codename?: string;
+      material?: string;
+      name?: string;
     })[],
+    // Additional data:
+    additional: {
+      imageurl: string;
+      floatData: {
+        min: number,
+        max: number
+      },
+      weapon_type: string;
+      item_name: string;
+    }
   }
   
 export type InspectRequest = {
