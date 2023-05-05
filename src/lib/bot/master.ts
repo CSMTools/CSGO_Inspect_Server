@@ -110,7 +110,7 @@ export default class Master extends EventEmitter {
     }
   }
 
-  inspectItem(link: string): Promise<ItemData> {
+  inspectItem(link: string, addAdditional: boolean = false): Promise<ItemData> {
     return new Promise(async (resolve, reject) => {
       if (!this.#botsAvailable) {
         reject('No bots available');
@@ -143,6 +143,10 @@ export default class Master extends EventEmitter {
           }
         } else if (res.a = params.a) {
           _this.removeListener('inspectResult', cb);
+
+          if (addAdditional) {
+            res = _this.#database?.gameData.addAdditionalItemProperties(res) || res;
+          }
 
           if (_this.#inspectCache) {
             if (res.s !== '0') {

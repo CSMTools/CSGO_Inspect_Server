@@ -15,7 +15,6 @@ export type LoginConfig = {
 }
   
 export type ItemData = {
-    item: {}
     delay?: number,
     itemid: string,
     defindex: number,
@@ -48,6 +47,10 @@ export type ItemData = {
       weapon_type: string;
       item_name: string;
       rarity_name: string;
+      quality_name: string;
+      origin_name: string;
+      wear_name: string;
+      full_item_name: string;
     }
   }
   

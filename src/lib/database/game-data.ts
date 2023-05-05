@@ -155,7 +155,11 @@ export default class GameData {
                 },
                 weapon_type: '',
                 item_name: '',
-                rarity_name: ''
+                rarity_name: '',
+                quality_name: '',
+                origin_name: '',
+                wear_name: '',
+                full_item_name: ''
             };
         }
 
@@ -268,62 +272,70 @@ export default class GameData {
         // Get the quality name (Souvenir, Stattrak, etc...)
         const qualityKey = Object.keys(this.#items_game['qualities']).find((key) => {
             return parseInt(this.#items_game['qualities'][key]['value']) === item.quality;
-        });
+        }) || '';
 
-        iteminfo['quality_name'] = this.#csgo_english[qualityKey];
+        item.additional.quality_name = this.#csgo_english[qualityKey];
 
         // Get the origin name
-        const origin = this.schema['originNames'].find((o) => o.origin === iteminfo.origin);
+        const origin = this.#schema['originNames'].find((o: any) => o.origin === item.origin);
 
         if (origin) {
-            iteminfo['origin_name'] = origin['name'];
+            item.additional.origin_name = origin['name'];
         }
 
         // Get the wear name
-        const wearName = this.getWearName(iteminfo.floatvalue);
+        const wearName = this.getWearName(item.paintwear);
+
         if (wearName) {
-            iteminfo['wear_name'] = wearName;
+            item.additional.wear_name = wearName;
         }
 
-        const itemName = this.getFullItemName(iteminfo);
+        const itemName = this.getFullItemName(item);
+
         if (itemName) {
-            iteminfo['full_item_name'] = itemName;
+            item.additional.full_item_name = itemName;
         }
+
+        return item;
     }
 
-    getWearName(float) {
+    getWearName(float: number) {
         const f = floatNames.find((f) => float > f.range[0] && float <= f.range[1]);
 
         if (f) {
-            return this.csgo_english[f['name']];
+            return this.#csgo_english[f['name']];
         }
     }
 
-    getFullItemName(iteminfo) {
+    getFullItemName(item: ItemData): string | false {
+        if (!item.additional) {
+            return false;
+        }
+
         let name = '';
 
         // Default items have the "unique" quality
-        if (iteminfo.quality !== 4) {
-            name += `${iteminfo.quality_name} `;
+        if (item.quality !== 4) {
+            name += `${item.additional.quality_name} `;
         }
 
         // Patch for items that are stattrak and unusual (ex. Stattrak Karambit)
-        if (iteminfo.killeatervalue !== null && iteminfo.quality !== 9) {
-            name += `${this.csgo_english['strange']} `;
+        if (item.killeatervalue !== null && item.quality !== 9) {
+            name += `${this.#csgo_english['strange']} `;
         }
 
-        name += `${iteminfo.weapon_type} `;
+        name += `${item.additional.weapon_type} `;
 
-        if (iteminfo.weapon_type === 'Sticker' || iteminfo.weapon_type === 'Sealed Graffiti') {
-            name += `| ${iteminfo.stickers[0].name}`;
+        if (item.additional.weapon_type === 'Sticker' || item.additional.weapon_type === 'Sealed Graffiti') {
+            name += `| ${item.stickers[0].name}`;
         }
 
         // Vanilla items have an item_name of '-'
-        if (iteminfo.item_name && iteminfo.item_name !== '-') {
-            name += `| ${iteminfo.item_name} `;
+        if (item.additional.item_name && item.additional.item_name !== '-') {
+            name += `| ${item.additional.item_name} `;
 
-            if (iteminfo.wear_name) {
-                name += `(${iteminfo.wear_name})`;
+            if (item.additional.wear_name) {
+                name += `(${item.additional.wear_name})`;
             }
         }
 

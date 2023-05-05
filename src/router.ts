@@ -18,7 +18,7 @@ export default async function router(fastify: FastifyInstance) {
 
   if (config.enabled_modules.database) {
     const dataManager = new DataManager(process.env.STEAM_API_KEY)
-    botMaster = new BotMaster(config.logins, config.bot_settings)
+    botMaster = new BotMaster(config.logins, config.bot_settings, dataManager)
   } else {
     botMaster = new BotMaster(config.logins, config.bot_settings)
   }

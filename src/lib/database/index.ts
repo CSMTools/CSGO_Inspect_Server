@@ -17,6 +17,8 @@ export default class DataManager {
   #steamApiKey: string;
   #scraper: Scraper;
 
+  gameData: GameData;
+
   constructor(steamApiKey: string) {
     this.#steamApiKey = steamApiKey;
 
@@ -24,7 +26,7 @@ export default class DataManager {
 
     this.#init();
 
-    new GameData;
+    this.gameData = new GameData;
   }
 
   #init() {

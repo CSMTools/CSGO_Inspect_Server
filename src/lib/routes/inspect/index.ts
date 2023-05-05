@@ -2,9 +2,11 @@ import { FastifyInstance } from "fastify"
 
 import BotMaster from '../../bot/master.js'
 import config from "../../../../config.js"
+import { ItemData } from "../../types/BotTypes.js"
 
 interface InspectQuerystring {
-    link: string
+    link: string,
+    additional?: string
 }
 
 export default function inspect(fastify: FastifyInstance, botMaster: BotMaster) {
@@ -17,7 +19,18 @@ export default function inspect(fastify: FastifyInstance, botMaster: BotMaster) 
     }>('/inspect', async function (request, reply) {
         if (request.query.link) {
             try {
-                reply.send(await botMaster.inspectItem(request.query.link))
+                let item: ItemData;
+
+                if (request.query.additional && request.query.additional === 'true') {
+                    item = await botMaster.inspectItem(request.query.link, true);
+                } else {
+                    item = await botMaster.inspectItem(request.query.link);
+                }
+
+                console.log(item);
+
+                reply.send(item);
+
             } catch (e) {
                 reply.status(500).send({
                     code: 500,
