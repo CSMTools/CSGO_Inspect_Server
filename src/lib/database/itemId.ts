@@ -66,6 +66,48 @@ function formatPaintWear(float: number): string {
     return fling;
 }
 
+function formatRotation(float: number): string {
+    if (float === 0) {
+        return '1' + '0' + '0'.repeat(17);
+    }
+
+    let str = '';
+
+    if (float < 0) {
+        str += '0';
+    }
+
+    if (float > 0) {
+        str += '2';
+    }
+
+    str += Math.floor(Math.abs(float));
+
+    let fling = Math.abs(float).toString();
+
+    fling = fling.slice(2, fling.length);
+
+    str += formatFloatDecimals(fling, 17);
+
+    return str;
+}
+
+function formatScale(float: number): string {
+    if (float === 0) {
+        return '000000000000000000';
+    }
+
+    let str = Math.floor(float).toString();
+
+    let fling = float.toString();
+
+    fling = fling.slice(2, fling.length);
+
+    str += formatFloatDecimals(fling, 17);
+
+    return str;
+}
+
 function formatInt(int: number, digits: number): string {
     // Make sure its an int and not a float
     const strint = Math.round(int).toString();
@@ -112,22 +154,29 @@ export function serializeStickerData_V1(stickerId: number, slot: number, wear: n
         tint_id++;
     }
 
+    // 5
     id += formatInt(stickerId, 5);
+    // 2
     id += formatInt(slot, 2);
+    // 17
     id += formatPaintWear(wear);
-    id += formatPaintWear(scale);
-    id += formatPaintWear(rotation);
+    // 18
+    id += formatScale(scale);
+    // 19
+    id += formatRotation(rotation);
+    // 2
     id += formatInt(tint_id, 2);
 
+    // 64
     return id;
 }
 
 export function deserializeStickerData_V1(data: string) {
-    if (!data.startsWith('0') || data.length !== 61 ) {
+    if (!data.startsWith('0') || data.length !== 64 ) {
         return null;
     }
 
-    let matched = data.match(/^0(\d{5,5})(\d\d)(\d{17,17})(\d{17,17})(\d{17,17})(\d\d)$/)
+    let matched = data.match(/^0(\d{5,5})(\d\d)(\d{17})(\d{18})(\d{19})(\d\d)$/)
 
     if (!matched) {
         return null;
@@ -139,15 +188,40 @@ export function deserializeStickerData_V1(data: string) {
         wear: null,
         scale: null,
         rotation: null,
-        tint_id: 0
+        tint_id: null
     }
 
     sticker.sticker_id = parseInt(matched[1]);
+
     sticker.slot = parseInt(matched[2]);
+
     sticker.wear = parseFloat('0.' + matched[3]);
-    sticker.scale = parseFloat('0.' + matched[4]);
-    sticker.rotation = parseFloat('0.' + matched[5]);
+    if (sticker.wear === 0) {
+        sticker.wear = null;
+    }
+
+    sticker.scale = parseFloat(`${matched[4].at(0)}.${matched[4].slice(1, matched[4].length)}`);
+    if (sticker.scale === 0) {
+        sticker.scale = null;
+    }
+
+    let rotation = '';
+    if (matched[5].at(0) === '1') {
+        sticker.rotation = null;
+    } else {
+        if (matched[5].at(0) === '0') {
+            rotation += '-';
+        }
+
+        rotation += `${matched[5].at(1)}.${matched[5].slice(2, matched[5].length)}`;
+
+        sticker.rotation = parseFloat(rotation);
+    }
+
     sticker.tint_id = parseInt(matched[6]);
+    if (sticker.tint_id === 0) {
+        sticker.tint_id = null;
+    }
 
     return sticker;
 }

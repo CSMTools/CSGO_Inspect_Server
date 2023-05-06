@@ -88,7 +88,7 @@ export default class DataManager {
     try {
       let inspectItemFields = inspectRequestToInspectFields({ ...data, time: 0 });
 
-      await prisma.steam_item.upsert({
+      let item = await prisma.steam_item.upsert({
         where: {
           id: itemId
         },
@@ -128,6 +128,10 @@ export default class DataManager {
           last_update: Date.now()
         }
       })
+
+      if (item.ownerHistory.length > 1) {
+        this.#cleanItemHistory(itemId);
+      }
 
       return true;
     } catch (e) {
@@ -296,5 +300,46 @@ export default class DataManager {
       m: ir?.m ?? '',
       stickers: this.#deserializeStickers(item.latest_stickers)
     };
+  }
+
+  /**
+   * Run this after updating an item, and don't wait for it to finish.
+   * @param {string} itemId ID of item
+   * @returns {void}
+   */
+  async #cleanItemHistory(itemId: string) {
+    let history = (await prisma.steam_item.findUnique({
+      where: {
+        id: itemId
+      },
+      select: {
+        ownerHistory: true
+      }
+    }))?.ownerHistory
+
+    if (!history) {
+      return;
+    }
+
+    if (history[0] === history[1]) {
+      history.shift();
+
+      try {
+        await prisma.steam_item.update({
+          where: {
+            id: itemId
+          },
+          data: {
+            ownerHistory: history
+          }
+        })
+
+        log(TAG, `Cleaned history of ${itemId}`);
+      } catch(e) {
+        return log(TAG, 'Failed to clean history of ' + itemId);
+      }
+    }
+
+    return;
   }
 }
