@@ -121,6 +121,8 @@ export default class Bot extends EventEmitter {
     this.#steamClient.on('disconnected', (eresult, msg) => {
       log(TAG, `Logged off, reconnecting! (${eresult}, ${msg})`)
 
+      console.log('debug', this.#loginData.authCode || '')
+
       this.login(this.#loginData.accountName, this.#loginData.password, this.#loginData.authCode || '');
     });
 
@@ -250,7 +252,6 @@ export default class Bot extends EventEmitter {
 
     this.#csgoClient.on('connectionStatus', (status) => {
       log(TAG, `GC Connection Status Update ${status}`);
-
     });
 
     // @ts-ignore

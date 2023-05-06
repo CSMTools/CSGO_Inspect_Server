@@ -15,7 +15,6 @@ model steam_users {
   last_update     BigInt
   checked_friends Boolean  @default(false)
   premium         Boolean  @default(false)
-  items           steam_item[]
 
   @@index([steam_id])
 }
@@ -37,8 +36,7 @@ model steam_item {
   origin              Int
   latest_stickers     String[] // Serialized with serializeStickerData_V1
 
-  owner               steam_users @relation(fields: [ownerId], references: [steam_id])
-  ownerId             String // relation scalar field  (used in the `@relation` attribute above)
+  ownerId             String // For example: (M|S)4313928510512678228
   ownerHistory        String[]
   last_update         BigInt
 

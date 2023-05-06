@@ -6,6 +6,7 @@ import { inspectRequestToInspectFields, linkToInspectRequest } from '../util.js'
 import { BotSettings, InspectRequest, ItemData, LoginConfig } from '../types/BotTypes';
 import DataManager from '../database/index.js';
 import InspectCache from './cache.js';
+import { getItemIDFromItem } from '../database/itemId.js';
 
 export default class Master extends EventEmitter {
   #inspectQueue: (InspectRequest | null)[] = [];
@@ -154,10 +155,14 @@ export default class Master extends EventEmitter {
           // The saving process not being awaited is intentional, as it is not neccessary to accomplish the request and can be side-lined.
           if (_this.#inspectCache) {
             if (res.s !== '0') {
-              _this.#inspectCache.createOrUpdateItem(res, res.s, false);
+              _this.#inspectCache.createOrUpdateItem(res, 'S' + res.s);
             } else {
-              _this.#inspectCache.createOrUpdateItem(res, res.m, true);
+              _this.#inspectCache.createOrUpdateItem(res, 'M' + res.m);
             }
+          }
+
+          if (res.itemid.length !== 32) {
+            res.itemid = getItemIDFromItem(res);
           }
 
           resolve(res);
@@ -208,10 +213,14 @@ export default class Master extends EventEmitter {
           // The saving process not being awaited is intentional, as it is not neccessary to accomplish the request and can be side-lined.
           if (_this.#inspectCache) {
             if (res.s !== '0') {
-              _this.#inspectCache.createOrUpdateItem(res, res.s, false);
+              _this.#inspectCache.createOrUpdateItem(res, 'S' + res.s);
             } else {
-              _this.#inspectCache.createOrUpdateItem(res, res.m, true);
+              _this.#inspectCache.createOrUpdateItem(res, 'M' + res.m);
             }
+          }
+
+          if (res.itemid.length !== 32) {
+            res.itemid = getItemIDFromItem(res);
           }
 
           resolve(res);

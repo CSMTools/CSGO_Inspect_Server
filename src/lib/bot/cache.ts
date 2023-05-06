@@ -13,7 +13,7 @@ export default class InspectCache {
         this.#dataManager = dataManager;
     }
 
-    async createOrUpdateItem(item: ItemData, ownerId: string, isFromMarket: boolean): Promise<boolean> {
+    async createOrUpdateItem(item: ItemData, ownerId: string): Promise<boolean> {
         log(TAG, `Saving item with assetId ${item.a} into database`)
 
         if ('delay' in item) {
@@ -22,7 +22,7 @@ export default class InspectCache {
 
         let id = getItemIDFromItem(item);
 
-        if (!(await this.#dataManager.createOrUpdateItem(id, ownerId, isFromMarket, item))) {
+        if (!(await this.#dataManager.createOrUpdateItem(id, ownerId, item))) {
             log(TAG, `Failed saving item with assetId ${item.a} into database`)
 
             return false;

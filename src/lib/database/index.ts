@@ -62,12 +62,12 @@ export default class DataManager {
 
   }
 
-  async getItemsByOwner(steamId: string, checkExpiry: boolean) {
+  async getItemsByOwner(ownerId: string, checkExpiry: boolean) {
     let parsedItems: ItemData[] = [];
 
     let items = await prisma.steam_item.findMany({
       where: {
-        ownerId: steamId
+        ownerId
       }
     })
 
@@ -84,7 +84,7 @@ export default class DataManager {
     return parsedItems;
   }
 
-  async createOrUpdateItem(itemId: string, ownerId: string, isFromMarket: boolean, data: ItemData): Promise<boolean> {
+  async createOrUpdateItem(itemId: string, ownerId: string, data: ItemData): Promise<boolean> {
     try {
       let inspectItemFields = inspectRequestToInspectFields({ ...data, time: 0 });
 
@@ -135,6 +135,7 @@ export default class DataManager {
 
       return true;
     } catch (e) {
+      console.log(e)
       return false;
     }
   }

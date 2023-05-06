@@ -57,7 +57,7 @@ function formatPaintWear(float: number): string {
         return '00000000000000000'
     }
 
-    let fling = float.toString();
+    let fling = float.toFixed(17);
 
     fling = fling.slice(2, fling.length);
 
