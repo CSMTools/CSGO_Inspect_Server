@@ -1,12 +1,14 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, steam_item } from '@prisma/client'
 
 import Master from '../bot/master.js';
 import Scraper from './web_scraper/index.js';
-import { inspectRequestToInspectFields, log } from '../util.js'
+import { inspectRequestToInspectFields, linkToInspectRequest, log } from '../util.js'
 
 import { SteamFriend } from '../types/DataManagementTypes.js';
-import { ItemData } from '../types/BotTypes.js';
+import { ItemData, StickerInItem } from '../types/BotTypes.js';
 import GameData from './game-data.js';
+import { deserializeStickerData_V1, serializeStickerData_V1 } from './itemId.js';
+import config from '../../../config.js';
 
 const prisma = new PrismaClient()
 
@@ -60,7 +62,7 @@ export default class DataManager {
 
   }
 
-  async getItemsByOwner(steamId: string) {
+  async getItemsByOwner(steamId: string, checkExpiry: boolean) {
     let parsedItems: ItemData[] = [];
 
     let items = await prisma.steam_item.findMany({
@@ -72,7 +74,11 @@ export default class DataManager {
     for (let i = 0; i < items.length; i++) {
       let item = items[i];
 
-      parsedItems.push(item.data as unknown as ItemData);
+      if (checkExpiry && item.last_update + config.caching.expiration_time < BigInt(Date.now())) {
+        continue;
+      }
+
+      parsedItems.push(this.#steam_itemToItemData(item));
     }
 
     return parsedItems;
@@ -80,7 +86,7 @@ export default class DataManager {
 
   async createOrUpdateItem(itemId: string, ownerId: string, isFromMarket: boolean, data: ItemData): Promise<boolean> {
     try {
-      let inspectItemFields = inspectRequestToInspectFields({...data, time: 0});
+      let inspectItemFields = inspectRequestToInspectFields({ ...data, time: 0 });
 
       await prisma.steam_item.upsert({
         where: {
@@ -90,28 +96,46 @@ export default class DataManager {
           id: itemId,
           last_inspect_fields: inspectItemFields,
           ownerId,
-          data: JSON.stringify(data),
+
+          // Data
+          defindex: data.defindex,
+          paintindex: data.paintindex,
+          rarity: data.rarity,
+          quality: data.quality,
+          killeaterscoretype: data.killeaterscoretype,
+          killeatervalue: data.killeatervalue,
+          customname: data.customname,
+          paintseed: data.paintseed,
+          paintwear: data.paintwear,
+          origin: data.origin,
+          latest_stickers: this.#serializeStickers(data.stickers),
+
           ownerHistory: [ownerId],
           last_update: Date.now()
         },
         update: {
           last_inspect_fields: inspectItemFields,
           ownerId,
-          data: JSON.stringify(data),
+
+          // Data
+          killeatervalue: data.killeatervalue,
+          customname: data.customname,
+          latest_stickers: this.#serializeStickers(data.stickers),
+
           ownerHistory: {
             push: ownerId
           },
           last_update: Date.now()
         }
       })
-      
+
       return true;
     } catch (e) {
       return false;
     }
   }
 
-  async getItemById(itemId: string): Promise<ItemData|null> {
+  async getItemById(itemId: string, checkExpiry: boolean): Promise<ItemData | null> {
     try {
       let item = await prisma.steam_item.findFirstOrThrow({
         where: {
@@ -119,13 +143,17 @@ export default class DataManager {
         }
       })
 
-      return item.data as unknown as ItemData;
+      if (checkExpiry && item.last_update + config.caching.expiration_time < BigInt(Date.now())) {
+        return null;
+      }
+
+      return this.#steam_itemToItemData(item);
     } catch (e) {
       return null;
     }
   }
 
-  async getItemByInspectFields(inspectFields: string): Promise<ItemData|null> {
+  async getItemByInspectFields(inspectFields: string, checkExpiry: boolean): Promise<ItemData | null> {
     try {
       let item = await prisma.steam_item.findFirstOrThrow({
         where: {
@@ -133,7 +161,11 @@ export default class DataManager {
         }
       })
 
-      return item.data as unknown as ItemData;
+      if (checkExpiry && item.last_update + config.caching.expiration_time < BigInt(Date.now())) {
+        return null;
+      }
+
+      return this.#steam_itemToItemData(item);
     } catch (e) {
       return null;
     }
@@ -215,5 +247,54 @@ export default class DataManager {
         resolve([]);
       }
     })
+  }
+
+  #serializeStickers(stickers: StickerInItem[]): string[] {
+    let serializedStickers: string[] = [];
+
+    for (let sticker of stickers) {
+      let s = serializeStickerData_V1(sticker.sticker_id, sticker.slot, sticker.wear, sticker.scale, sticker.rotation, sticker.tint_id);
+
+      serializedStickers.push(s)
+    }
+
+    return serializedStickers;
+  }
+
+  #deserializeStickers(stickers: string[]): StickerInItem[] {
+    let serializedStickers: StickerInItem[] = [];
+
+    for (let sticker of stickers) {
+      let s = deserializeStickerData_V1(sticker);
+
+      if (s !== null) {
+        serializedStickers.push(s);
+      }
+    }
+
+    return serializedStickers;
+  }
+
+  #steam_itemToItemData(item: steam_item): ItemData {
+    let ir = linkToInspectRequest('steam://rungame/730/0/+csgo_econ_action_preview ' + item.last_inspect_fields);
+
+    return {
+      itemid: item.id,
+      defindex: item.defindex,
+      paintindex: item.paintindex,
+      rarity: item.rarity,
+      quality: item.quality,
+      killeaterscoretype: item.killeaterscoretype,
+      killeatervalue: item.killeatervalue,
+      customname: item.customname,
+      paintseed: item.paintseed,
+      paintwear: item.paintwear,
+      origin: item.origin,
+      s: ir?.s ?? '',
+      a: ir?.a ?? '',
+      d: ir?.d ?? '',
+      m: ir?.m ?? '',
+      stickers: this.#deserializeStickers(item.latest_stickers)
+    };
   }
 }

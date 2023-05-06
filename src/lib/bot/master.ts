@@ -128,6 +128,9 @@ export default class Master extends EventEmitter {
         let cachedItem: ItemData | null = await this.#inspectCache.getItemByInspectFields(inspectFields);
 
         if (cachedItem !== null) {
+          if (addAdditional) {
+            cachedItem = this.#database?.gameData.addAdditionalItemProperties(cachedItem) || cachedItem;
+          }
           return resolve(cachedItem);
         }
       }
@@ -148,6 +151,7 @@ export default class Master extends EventEmitter {
             res = _this.#database?.gameData.addAdditionalItemProperties(res) || res;
           }
 
+          // The saving process not being awaited is intentional, as it is not neccessary to accomplish the request and can be side-lined.
           if (_this.#inspectCache) {
             if (res.s !== '0') {
               _this.#inspectCache.createOrUpdateItem(res, res.s, false);
@@ -166,11 +170,26 @@ export default class Master extends EventEmitter {
     })
   }
 
-  #inspectItemBulk(params: InspectRequest): Promise<ItemData> {
-    return new Promise((resolve, reject) => {
+  #inspectItemBulk(params: InspectRequest, addAdditional: boolean = false): Promise<ItemData> {
+    return new Promise(async (resolve, reject) => {
       if (!this.#botsAvailable) {
         reject('No bots available');
       }
+
+      if (this.#inspectCache) {
+        let inspectFields = inspectRequestToInspectFields(params);
+        let cachedItem: ItemData | null = await this.#inspectCache.getItemByInspectFields(inspectFields);
+
+        if (cachedItem !== null) {
+          if (addAdditional) {
+            cachedItem = this.#database?.gameData.addAdditionalItemProperties(cachedItem) || cachedItem;
+          }
+          
+          return resolve(cachedItem);
+        }
+      }
+
+      this.#inspectQueue.push(params);
 
       let _this = this;
 
@@ -182,6 +201,19 @@ export default class Master extends EventEmitter {
         } else if (res.a = params.a) {
           _this.removeListener('inspectResult', cb)
 
+          if (addAdditional) {
+            res = _this.#database?.gameData.addAdditionalItemProperties(res) || res;
+          }
+
+          // The saving process not being awaited is intentional, as it is not neccessary to accomplish the request and can be side-lined.
+          if (_this.#inspectCache) {
+            if (res.s !== '0') {
+              _this.#inspectCache.createOrUpdateItem(res, res.s, false);
+            } else {
+              _this.#inspectCache.createOrUpdateItem(res, res.m, true);
+            }
+          }
+
           resolve(res);
         }
       })
@@ -192,13 +224,11 @@ export default class Master extends EventEmitter {
     })
   }
 
-  inspectItemBulk(links: string[]): Promise<ItemData[]> {
+  inspectItemBulk(links: string[], addAdditional: boolean = false): Promise<ItemData[]> {
     return new Promise(async (resolve, reject) => {
       const items: ItemData[] = [];
 
-      for (let i = 0; i < links.length; i++) {
-        let link = links[i];
-
+      for (let link of links) {
         const params = linkToInspectRequest(link);
 
         if (params === null) {
@@ -206,9 +236,7 @@ export default class Master extends EventEmitter {
           return;
         }
 
-        this.#inspectQueue.push(params);
-
-        let itemData = await this.#inspectItemBulk(params);
+        let itemData = await this.#inspectItemBulk(params, addAdditional);
 
         items.push(itemData);
       }

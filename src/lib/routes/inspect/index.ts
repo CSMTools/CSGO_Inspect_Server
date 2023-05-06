@@ -27,8 +27,6 @@ export default function inspect(fastify: FastifyInstance, botMaster: BotMaster) 
                     item = await botMaster.inspectItem(request.query.link);
                 }
 
-                console.log(item);
-
                 reply.send(item);
 
             } catch (e) {

@@ -42,8 +42,8 @@ export default {
     // Caching for inspect API
     'caching': {
         'enable': true,
-        // How long cache should keep inspected items before re-inspecting
-        'expiration_time': 7200000
+        // How long cache should keep inspected items before re-inspecting, must be BigInt
+        'expiration_time': 7200000n
     },
     'file_location': process.cwd() + '/files',
     // Max amount of simultaneous requests from the same IP  (incl. WS and HTTP/HTTPS), -1 for unlimited

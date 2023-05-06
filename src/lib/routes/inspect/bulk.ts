@@ -2,10 +2,12 @@ import { FastifyInstance } from "fastify"
 
 import BotMaster from '../../bot/master.js'
 import config from "../../../../config.js"
+import { ItemData } from "../../types/BotTypes.js"
 
 interface BulkInspectQuerystring {
     links: string,
-    key?: string
+    key?: string,
+    additional?: string
 }
 
 export default function inspect(fastify: FastifyInstance, botMaster: BotMaster) {
@@ -26,7 +28,22 @@ export default function inspect(fastify: FastifyInstance, botMaster: BotMaster) 
                         error: "Max link amount exceeded."
                     });
                 }
-                reply.send(await botMaster.inspectItemBulk(links))
+
+                if (links.length < 2) {
+                    return reply.send({
+                        error: "Only use this endpoint for bulk requests."
+                    });
+                }
+
+                let items: ItemData[];
+
+                if (request.query.additional && request.query.additional === 'true') {
+                    items = await botMaster.inspectItemBulk(links, true);
+                } else {
+                    items = await botMaster.inspectItemBulk(links);
+                }
+                
+                reply.send(items);
             } else {
                 reply.send({})
             }

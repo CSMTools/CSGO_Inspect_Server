@@ -23,7 +23,20 @@ model steam_users {
 model steam_item {
   id                  String @unique 
   last_inspect_fields String // Easy way to get item with caching, for example: M4313928510512678228A30019827328D14610838559007360636
-  data                Json
+
+  // Data
+  defindex            Int
+  paintindex          Int
+  rarity              Int
+  quality             Int
+  killeaterscoretype  Int?
+  killeatervalue      Int
+  customname          String?
+  paintseed           Int?
+  paintwear           Float
+  origin              Int
+  latest_stickers     String[] // Serialized with serializeStickerData_V1
+
   owner               steam_users @relation(fields: [ownerId], references: [steam_id])
   ownerId             String // relation scalar field  (used in the `@relation` attribute above)
   ownerHistory        String[]

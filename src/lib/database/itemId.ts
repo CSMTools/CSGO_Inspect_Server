@@ -10,7 +10,7 @@
  * @returns {string} 32-character ID
  */
 
-import { ItemData } from "../types/BotTypes";
+import { ItemData, StickerInItem } from "../types/BotTypes";
 
 export function createItemID_V1(killeaterscoretype: number | null, defIndex: number, paintIndex: number, paintSeed: number, rarity: number, quality: number, paintWear: number): string {
     let id = '0';
@@ -51,15 +51,15 @@ function formatKillEaterType(type: number | null): number {
 
 function formatPaintWear(float: number): string {
     if (float >= 1) {
-        return '100000000000000000'
+        return '00000000000000000'
     }
     if (float <= 0) {
-        return '000000000000000000'
+        return '00000000000000000'
     }
 
     let fling = float.toString();
 
-    fling = fling.slice(2, fling.length-1);
+    fling = fling.slice(2, fling.length);
 
     fling = formatFloatDecimals(fling, 17);
 
@@ -89,4 +89,65 @@ function formatFloatDecimals(floatDec: string, digits: number): string {
     }
 
     return floatDec;
+}
+
+export function serializeStickerData_V1(stickerId: number, slot: number, wear: number | null, scale: number | null, rotation: number | null, tint_id: number | null): string {
+    let id = '0';
+
+    if (wear === null) {
+        wear = 0;
+    }
+
+    if (scale === null) {
+        scale = 0;
+    }
+
+    if (rotation === null) {
+        rotation = 0;
+    }
+
+    if (tint_id === null) {
+        tint_id = 0;
+    } else {
+        tint_id++;
+    }
+
+    id += formatInt(stickerId, 5);
+    id += formatInt(slot, 2);
+    id += formatPaintWear(wear);
+    id += formatPaintWear(scale);
+    id += formatPaintWear(rotation);
+    id += formatInt(tint_id, 2);
+
+    return id;
+}
+
+export function deserializeStickerData_V1(data: string) {
+    if (!data.startsWith('0') || data.length !== 61 ) {
+        return null;
+    }
+
+    let matched = data.match(/^0(\d{5,5})(\d\d)(\d{17,17})(\d{17,17})(\d{17,17})(\d\d)$/)
+
+    if (!matched) {
+        return null;
+    }
+
+    const sticker: StickerInItem = {
+        sticker_id: 0,
+        slot: 0,
+        wear: null,
+        scale: null,
+        rotation: null,
+        tint_id: 0
+    }
+
+    sticker.sticker_id = parseInt(matched[1]);
+    sticker.slot = parseInt(matched[2]);
+    sticker.wear = parseFloat('0.' + matched[3]);
+    sticker.scale = parseFloat('0.' + matched[4]);
+    sticker.rotation = parseFloat('0.' + matched[5]);
+    sticker.tint_id = parseInt(matched[6]);
+
+    return sticker;
 }

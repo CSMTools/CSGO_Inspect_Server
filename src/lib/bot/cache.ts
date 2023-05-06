@@ -36,7 +36,7 @@ export default class InspectCache {
     async getItemById(itemId: string): Promise<ItemData|null> {
         log(TAG, `Getting item with itemId ${itemId} from database`)
 
-        let item = await this.#dataManager.getItemById(itemId);
+        let item = await this.#dataManager.getItemById(itemId, true);
 
         log(TAG, `Gotten or failed to get item with itemId ${itemId} from database`)
 
@@ -46,7 +46,7 @@ export default class InspectCache {
     async getItemByInspectFields(inspectFields: string): Promise<ItemData|null> {
         log(TAG, `Getting item with inspectFields ${inspectFields} from database`)
 
-        let item = await this.#dataManager.getItemByInspectFields(inspectFields);
+        let item = await this.#dataManager.getItemByInspectFields(inspectFields, true);
 
         log(TAG, `Gotten or failed to get item with inspectFields ${inspectFields} from database`)
 
