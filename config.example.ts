@@ -43,7 +43,9 @@ export default {
     'caching': {
         'enable': true,
         // How long cache should keep inspected items before re-inspecting, must be BigInt
-        'expiration_time': 7200000n
+        'expiration_time': 7200000n,
+        // Costs slight amounts of processing power in return for shortening repetitive sticker data
+        'shorten_sticker_serialization': true
     },
     'file_location': process.cwd() + '/files',
     // Max amount of simultaneous requests from the same IP  (incl. WS and HTTP/HTTPS), -1 for unlimited

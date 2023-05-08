@@ -20,10 +20,8 @@ model steam_users {
 }
 
 model steam_item {
-  id                  String @unique 
-  last_inspect_fields String // Easy way to get item with caching, for example: M4313928510512678228A30019827328D14610838559007360636
-
-  // Data
+  id                  String   @unique
+  last_inspect_fields String
   defindex            Int
   paintindex          Int
   rarity              Int
@@ -34,9 +32,8 @@ model steam_item {
   paintseed           Int?
   paintwear           Float
   origin              Int
-  latest_stickers     String[] // Serialized with serializeStickerData_V1
-
-  ownerId             String // For example: (M|S)4313928510512678228
+  latest_stickers     String[]
+  ownerId             String
   ownerHistory        String[]
   last_update         BigInt
 
