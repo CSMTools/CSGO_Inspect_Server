@@ -114,14 +114,13 @@ export default class Master extends EventEmitter {
   inspectItem(link: string, addAdditional: boolean = false): Promise<ItemData> {
     return new Promise(async (resolve, reject) => {
       if (!this.#botsAvailable) {
-        reject('No bots available');
+        return reject('No bots available');
       }
 
       const params = linkToInspectRequest(link);
 
       if (params === null) {
-        reject('Invalid link');
-        return;
+        return reject('Invalid link');
       }
 
       if (this.#inspectCache) {
@@ -178,7 +177,7 @@ export default class Master extends EventEmitter {
   #inspectItemBulk(params: InspectRequest, addAdditional: boolean = false): Promise<ItemData> {
     return new Promise(async (resolve, reject) => {
       if (!this.#botsAvailable) {
-        reject('No bots available');
+        return reject('No bots available');
       }
 
       if (this.#inspectCache) {
