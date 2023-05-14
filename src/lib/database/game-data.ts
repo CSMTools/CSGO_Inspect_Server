@@ -5,6 +5,7 @@ import UserFileManager from "../files/userFiles.js";
 import * as vdf from '../vdf-parser.js';
 import { log } from '../util.js';
 import { ItemData } from '../types/BotTypes.js';
+import { StickerDataFromAPI } from '../types/DataManagementTypes.js';
 
 const floatNames = [{
     range: [0, 0.07],
@@ -27,14 +28,16 @@ const urls = {
     items_game_url: 'https://raw.githubusercontent.com/SteamDatabase/GameTracking-CSGO/master/csgo/scripts/items/items_game.txt',
     items_game_cdn_url: 'https://raw.githubusercontent.com/SteamDatabase/GameTracking-CSGO/master/csgo/scripts/items/items_game_cdn.txt',
     csgo_english_url: 'https://raw.githubusercontent.com/SteamDatabase/GameTracking-CSGO/master/csgo/resource/csgo_english.txt',
-    schema_url: 'https://raw.githubusercontent.com/SteamDatabase/SteamTracking/b5cba7a22ab899d6d423380cff21cec707b7c947/ItemSchema/CounterStrikeGlobalOffensive.json'
+    schema_url: 'https://raw.githubusercontent.com/SteamDatabase/SteamTracking/b5cba7a22ab899d6d423380cff21cec707b7c947/ItemSchema/CounterStrikeGlobalOffensive.json',
+    stickers_url: 'https://bymykel.github.io/CSGO-API/api/en/stickers.json'
 }
 
 const fileIds = {
     items_game: '0',
     items_game_cdn: '1',
     csgo_english: '2',
-    schema: '3'
+    schema: '3',
+    stickers: '4'
 }
 
 const LanguageHandler = {
@@ -54,6 +57,7 @@ export default class GameData {
     #items_game_cdn: any;
     #csgo_english: any;
     #schema: any;
+    #stickers: any;
 
     constructor() {
         this.#files = new UserFileManager(config.file_location);
@@ -92,6 +96,13 @@ export default class GameData {
                     .catch(e => {
                         this.#reloadFiles();
                     })
+                this.#files.getFile('localserver', 'game-data', fileIds.stickers)
+                    .then((file) => {
+                        this.#stickers = this.#formatStickerFile(JSON.parse(file));
+                    })
+                    .catch(e => {
+                        this.#reloadFiles();
+                    })
             })
             .catch(e => {
                 this.#reloadFiles();
@@ -110,7 +121,7 @@ export default class GameData {
         })
         this.#downloadFile(urls.items_game_cdn_url, (file: string | null): void => {
             if (!file) {
-                return log(TAG, `Failed to download items_game_cdn`)
+                return log(TAG, `Failed to download items_game_cdn`);
             }
 
             this.#files.saveFile('localserver', 'game-data', fileIds.items_game_cdn, file)
@@ -122,7 +133,7 @@ export default class GameData {
                 return log(TAG, `Failed to download csgo_english`)
             }
 
-            this.#files.saveFile('localserver', 'game-data', fileIds.csgo_english, file)
+            this.#files.saveFile('localserver', 'game-data', fileIds.csgo_english, file);
 
             this.#csgo_english = this.#objectKeysToLowerCase(vdf.parse(file)['lang']['Tokens']);
             this.#csgo_english = new Proxy(this.#csgo_english, LanguageHandler);
@@ -132,9 +143,19 @@ export default class GameData {
                 return log(TAG, `Failed to download schema`)
             }
 
-            this.#files.saveFile('localserver', 'game-data', fileIds.schema, file)
+            this.#files.saveFile('localserver', 'game-data', fileIds.schema, file);
 
             this.#schema = JSON.parse(file)['result'];
+        })
+
+        this.#downloadFile(urls.stickers_url, (file: string | null): void => {
+            if (!file) {
+                return log(TAG, `Failed to download stickers.json`)
+            }
+
+            this.#files.saveFile('localserver', 'game-data', fileIds.stickers, file);
+
+            this.#stickers = this.#formatStickerFile(JSON.parse(file));
         })
     }
 
@@ -173,6 +194,14 @@ export default class GameData {
                 continue;
             };
 
+            const stickerFromAPI: StickerDataFromAPI = this.#stickers[`sticker-${sticker.sticker_id}`];
+            
+            if (!stickerFromAPI) {
+                continue;
+            }
+
+            sticker.image = stickerFromAPI.image;
+            sticker.rarityname = stickerFromAPI.rarity ?? undefined;
             sticker.codename = kit.name;
             sticker.material = kit.sticker_material;
 
@@ -405,4 +434,14 @@ export default class GameData {
             });
         });
     };
+
+    #formatStickerFile(data: StickerDataFromAPI[]) {
+        let object: any = {};
+
+        data.forEach(sticker => {
+            object[sticker.id] = sticker;
+        })
+
+        return object;
+    }
 }

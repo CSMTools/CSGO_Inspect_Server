@@ -54,6 +54,8 @@ export type StickerInItem = Sticker & {
   codename?: string;
   material?: string;
   name?: string;
+  image?: string;
+  rarityname?: string;
 }
 
 export type InspectRequest = {
