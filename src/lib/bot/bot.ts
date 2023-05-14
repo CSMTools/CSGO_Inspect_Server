@@ -131,6 +131,8 @@ export default class Bot extends EventEmitter {
 
       if (!this.#loginData.authCode) {
         return log(TAG, `Can't find Steam Guard authentication method.`)
+      } else {
+        console.log('debug2', this.#loginData.authCode)
       }
       
       let code = SteamTotp.getAuthCode(this.#loginData.authCode);
