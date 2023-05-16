@@ -127,7 +127,7 @@ export default class Bot extends EventEmitter {
     });
 
     this.#steamClient.on('steamGuard', (_, callback) => {
-      log(TAG, `Steam requested Steam Guard Code`)
+      log(TAG, `Steam requested Steam Guard Code`);
 
       if (!this.#loginData.authCode) {
         return log(TAG, `Can't find Steam Guard authentication method.`)
@@ -135,8 +135,9 @@ export default class Bot extends EventEmitter {
         console.log('debug2', this.#loginData.authCode)
       }
       
-      let code = SteamTotp.getAuthCode(this.#loginData.authCode);
-      callback(code);
+      this.#loginData.twoFactorCode = SteamTotp.getAuthCode(this.#loginData.authCode);
+      console.log('debug3', this.#loginData.twoFactorCode);
+      callback(this.#loginData.twoFactorCode);
     });
 
     this.#steamClient.on('loggedOn', (details, parental) => {
