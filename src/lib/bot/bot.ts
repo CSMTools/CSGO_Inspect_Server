@@ -42,6 +42,7 @@ export default class Bot extends EventEmitter {
     enablePicsCache: true,
     autoRelogin: false
   });
+  // @ts-ignore
   #csgoClient: GlobalOffensive = new GlobalOffensive(this.#steamClient);
   #loginData: LoginData = {
     accountName: '',
@@ -257,7 +258,6 @@ export default class Bot extends EventEmitter {
       log(TAG, `GC Connection Status Update ${status}`);
     });
 
-    // @ts-ignore
     this.#csgoClient.on('debug', (msg) => {
       log(TAG, `CSGO Debug ${msg}`);
     });
