@@ -99,11 +99,29 @@ export default class Master extends EventEmitter {
       return;
     }
 
-    let botIndex = this.#getNonBusyBot()
+    if (this.#inspectCache) {
+      let inspectFields = inspectRequestToInspectFields(inspectData);
+      let cachedItem: ItemData | null = await this.#inspectCache.getItemByInspectFields(inspectFields);
+
+      if (cachedItem !== null) {
+        return this.emit('inspectResult', cachedItem);
+      }
+    }
+
+    let botIndex = this.#getNonBusyBot();
     if (typeof botIndex === 'number') {
       this.#bots[botIndex].sendFloatRequest(inspectData)
         .then((res) => {
           this.emit('inspectResult', res);
+
+          // The saving process not being awaited is intentional, as it is not neccessary to accomplish the request and can be side-lined.
+          if (this.#inspectCache) {
+            if (res.s !== '0') {
+              this.#inspectCache.createOrUpdateItem(res, 'S' + res.s);
+            } else {
+              this.#inspectCache.createOrUpdateItem(res, 'M' + res.m);
+            }
+          }
         })
         .catch((err) => {
           this.emit('inspectResult', `${inspectData?.a} ${err as string}`);
@@ -123,18 +141,6 @@ export default class Master extends EventEmitter {
         return reject('Invalid link');
       }
 
-      if (this.#inspectCache) {
-        let inspectFields = inspectRequestToInspectFields(params);
-        let cachedItem: ItemData | null = await this.#inspectCache.getItemByInspectFields(inspectFields);
-
-        if (cachedItem !== null) {
-          if (addAdditional) {
-            cachedItem = this.#database?.gameData.addAdditionalItemProperties(cachedItem) || cachedItem;
-          }
-          return resolve(cachedItem);
-        }
-      }
-
       this.#inspectQueue.push(params);
 
       let _this = this;
@@ -151,15 +157,6 @@ export default class Master extends EventEmitter {
             res = _this.#database?.gameData.addAdditionalItemProperties(res) || res;
           }
 
-          // The saving process not being awaited is intentional, as it is not neccessary to accomplish the request and can be side-lined.
-          if (_this.#inspectCache) {
-            if (res.s !== '0') {
-              _this.#inspectCache.createOrUpdateItem(res, 'S' + res.s);
-            } else {
-              _this.#inspectCache.createOrUpdateItem(res, 'M' + res.m);
-            }
-          }
-
           if (res.itemid.length !== 32) {
             res.itemid = getItemIDFromItem(res);
           }
@@ -168,66 +165,7 @@ export default class Master extends EventEmitter {
         }
       })
 
-      if (this.#botsNotBusy > 0) {
-        this.#handleNextInspect();
-      }
-    })
-  }
-
-  #inspectItemBulk(params: InspectRequest, addAdditional: boolean = false): Promise<ItemData> {
-    return new Promise(async (resolve, reject) => {
-      if (!this.#botsAvailable) {
-        return reject('No bots available');
-      }
-
-      if (this.#inspectCache) {
-        let inspectFields = inspectRequestToInspectFields(params);
-        let cachedItem: ItemData | null = await this.#inspectCache.getItemByInspectFields(inspectFields);
-
-        if (cachedItem !== null) {
-          if (addAdditional) {
-            cachedItem = this.#database?.gameData.addAdditionalItemProperties(cachedItem) || cachedItem;
-          }
-          
-          return resolve(cachedItem);
-        }
-      }
-
-      this.#inspectQueue.push(params);
-
-      let _this = this;
-
-      this.on('inspectResult', function cb(res: ItemData | string) {
-        console.log(res);
-        if (typeof res === 'string') {
-          if (res.startsWith(params.a)) {
-            return reject(res);
-          }
-        } else if (res.a = params.a) {
-          _this.removeListener('inspectResult', cb)
-
-          if (addAdditional) {
-            res = _this.#database?.gameData.addAdditionalItemProperties(res) || res;
-          }
-
-          // The saving process not being awaited is intentional, as it is not neccessary to accomplish the request and can be side-lined.
-          if (_this.#inspectCache) {
-            if (res.s !== '0') {
-              _this.#inspectCache.createOrUpdateItem(res, 'S' + res.s);
-            } else {
-              _this.#inspectCache.createOrUpdateItem(res, 'M' + res.m);
-            }
-          }
-
-          if (res.itemid.length !== 32) {
-            res.itemid = getItemIDFromItem(res);
-          }
-
-          resolve(res);
-        }
-      })
-
-      if (this.botsNotBusy !== 0) {
+      if (this.botsNotBusy > 0) {
         this.#handleNextInspect();
       }
     })
@@ -238,16 +176,13 @@ export default class Master extends EventEmitter {
       const items: ItemData[] = [];
 
       for (let link of links) {
-        const params = linkToInspectRequest(link);
+        try {
+          let itemData = await this.inspectItem(link, addAdditional);
 
-        if (params === null) {
-          reject('Invalid link');
-          return;
+          items.push(itemData);
+        } catch (e) {
+          return reject(e);
         }
-
-        let itemData = await this.#inspectItemBulk(params, addAdditional);
-
-        items.push(itemData);
       }
 
       resolve(items);
