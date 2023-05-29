@@ -1,3 +1,7 @@
+import config from "../../../config.js";
+import { ItemData, StickerInItem } from "../types/BotTypes";
+
+
 /**
  * V1 of the item IDs
  * @param {number | null} killeaterscoretype
@@ -7,12 +11,8 @@
  * @param {number} rarity
  * @param {number} quality
  * @param {number} paintWear
- * @returns {string} 32-character ID
+ * @returns {string} 34-character ID
  */
-
-import config from "../../../config.js";
-import { ItemData, StickerInItem } from "../types/BotTypes";
-
 export function createItemID_V1(
     killeaterscoretype: number | null,
     defIndex: number,
@@ -26,8 +26,8 @@ export function createItemID_V1(
 
     id += formatKillEaterType(killeaterscoretype);
     id += formatInt(defIndex, 3);
-    id += formatInt(paintIndex, 3);
-    id += formatInt(paintSeed, 3);
+    id += formatInt(paintIndex, 4);
+    id += formatInt(paintSeed, 4);
     id += formatInt(rarity, 2);
     id += formatInt(quality, 2);
     id += formatPaintWear(paintWear);
@@ -132,8 +132,9 @@ function formatInt(int: number, digits: number): string {
     if (strint.length < digits) {
         return "0".repeat(digits - strint.length) + strint;
     }
+
     if (strint.length > digits) {
-        return strint.slice(0, digits - 1);
+        return strint.slice(0, digits);
     }
 
     return strint;

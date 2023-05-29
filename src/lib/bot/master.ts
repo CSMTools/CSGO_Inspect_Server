@@ -198,6 +198,7 @@ export default class Master extends EventEmitter {
       let _this = this;
 
       this.on('inspectResult', function cb(res: ItemData | string) {
+        console.log(res);
         if (typeof res === 'string') {
           if (res.startsWith(params.a)) {
             return reject(res);
