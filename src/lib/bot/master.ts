@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 
 import Bot from './bot.js';
-import { inspectRequestToInspectFields, linkToInspectRequest } from '../util.js';
+import { inspectRequestToInspectFields, linkToInspectRequest, log, shuffleArray } from '../util.js';
 
 import { BotSettings, InspectRequest, ItemData, LoginConfig } from '../types/BotTypes';
 import DataManager from '../database/index.js';
@@ -10,10 +10,8 @@ import { getItemIDFromItem } from '../database/itemId.js';
 
 export default class Master extends EventEmitter {
   #inspectQueue: (InspectRequest | null)[] = [];
-  #botsBusyIndex: boolean[] = [];
   #database: DataManager | null;
   #botsAvailable: number = 0;
-  #botsNotBusy: number = 0;
   #settings: BotSettings;
   #logins: LoginConfig[];
   #bots: Bot[] = [];
@@ -62,34 +60,32 @@ export default class Master extends EventEmitter {
       const bot = this.#bots[i];
       const _this = this;
 
-      function handleBusy() {
-        _this.#botsBusyIndex[i] = _this.#bots[i].busy;
-        _this.botsNotBusy = _this.#botsBusyIndex.filter(x => x === false).length;
-      }
-
       bot.on('ready', () => {
         this.#botsAvailable++;
-        handleBusy()
       })
       bot.on('unready', () => {
         this.#botsAvailable--;
-        handleBusy()
       })
-      bot.on('busy', handleBusy)
-      bot.on('unbusy', handleBusy)
     }
   }
 
-  #getNonBusyBot() {
-    for (let i = 0; i < this.#bots.length; i++) {
-      if (this.#botsBusyIndex[i] === false) {
-        return i;
+  #getNonBusyBot(): Bot | false {
+    // Shuffle array to evenly distribute requests
+    let bots = shuffleArray(this.#bots);
+
+    for (let bot of bots) {
+      console.log(1, bot.name)
+      if (!bot.busy && bot.loggedIn) {
+        console.log(2, bot.name)
+        return bot;
       }
     }
+
+    return false;
   }
 
   async #handleNextInspect() {
-    if (!this.#inspectQueue.length || !this.#botsNotBusy) {
+    if (!this.#inspectQueue.length || !this.#botsAvailable) {
       return;
     }
 
@@ -108,9 +104,9 @@ export default class Master extends EventEmitter {
       }
     }
 
-    let botIndex = this.#getNonBusyBot();
-    if (typeof botIndex === 'number') {
-      this.#bots[botIndex].sendFloatRequest(inspectData)
+    let bot = this.#getNonBusyBot();
+    if (bot) {
+      bot.sendFloatRequest(inspectData)
         .then((res) => {
           this.emit('inspectResult', res);
 
@@ -126,6 +122,8 @@ export default class Master extends EventEmitter {
         .catch((err) => {
           this.emit('inspectResult', `${inspectData?.a} ${err as string}`);
         })
+    } else {
+      this.#inspectQueue.push(inspectData);
     }
   }
 
@@ -150,7 +148,9 @@ export default class Master extends EventEmitter {
           if (res.startsWith(params.a)) {
             return reject(res);
           }
-        } else if (res.a = params.a) {
+
+          //I managed to create an amazing typo below, where I put = instead of === and that caused me multiple days of debugging fml. Just wanted to put this here to always remember.
+        } else if (res.a === params.a) {
           _this.removeListener('inspectResult', cb);
 
           if (addAdditional) {
@@ -165,7 +165,7 @@ export default class Master extends EventEmitter {
         }
       })
 
-      if (this.botsNotBusy > 0) {
+      if (this.#getNonBusyBot()) {
         this.#handleNextInspect();
       }
     })
@@ -173,32 +173,25 @@ export default class Master extends EventEmitter {
 
   inspectItemBulk(links: string[], addAdditional: boolean = false): Promise<ItemData[]> {
     return new Promise(async (resolve, reject) => {
+      const promises: Promise<ItemData>[] = [];
       const items: ItemData[] = [];
 
       for (let link of links) {
-        try {
-          let itemData = await this.inspectItem(link, addAdditional);
-
-          items.push(itemData);
-        } catch (e) {
-          return reject(e);
-        }
+        promises.push(this.inspectItem(link, addAdditional));
       }
 
-      resolve(items);
+      Promise.allSettled(promises).then((results) => {
+        results.forEach((result) => {
+          if (result.status === "fulfilled") {
+            items.push(result.value);
+          } else {
+            reject(result.reason);
+          }
+        })
+
+        resolve(items);
+      })
     })
-  }
-
-  set botsNotBusy(val: number) {
-    this.#botsNotBusy = val;
-
-    if (this.#botsNotBusy > 0) {
-      this.#handleNextInspect();
-    }
-  }
-
-  get botsNotBusy() {
-    return this.#botsNotBusy;
   }
 
   get botsAvailable() {

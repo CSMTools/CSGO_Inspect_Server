@@ -33,8 +33,6 @@ import login_errors from "../enum/BOT_LOGIN_ERRORS.js"
 
 import type { LoginData, ItemData, InspectRequest, BotSettings } from "../types/BotTypes.js"
 
-let TAG = '';
-
 export default class Bot extends EventEmitter {
   #loggedIn = false;
   #relogin = false;
@@ -51,11 +49,13 @@ export default class Bot extends EventEmitter {
     authCode: '',
     twoFactorCode: ''
   };
-  #resolve: ((value: ItemData) => void) | boolean = false;
-  #currentRequest: InspectRequest | boolean = false;
+  #resolve: ((value: ItemData) => void) | false = false;
+  #currentRequest: InspectRequest | false = false;
   ttlTimeout: NodeJS.Timeout | boolean = false;
   settings: BotSettings;
   #busy: boolean = false;
+  TAG: string = "unknownBot";
+  name?: string;
 
   constructor(settings: BotSettings) {
     super();
@@ -77,7 +77,7 @@ export default class Bot extends EventEmitter {
   }
 
   async login(username: string, password: string, auth: string) {
-    TAG = getBotTag(username);
+    this.TAG = getBotTag(username);
     this.loggedIn = false;
 
     if (this.#steamClient) {
@@ -97,52 +97,56 @@ export default class Bot extends EventEmitter {
         this.#loginData.authCode = auth;
       } else {
         // Generate the code from the shared_secret
-        log(TAG, "Generating 2FA code from shared_secret")
+        log(this.TAG, "Generating 2FA code from shared_secret")
         this.#loginData.twoFactorCode = SteamTotp.getAuthCode(auth);
       }
     }
 
-    log(TAG, "Logging in...");
+    log(this.TAG, "Logging in...");
     this.#steamClient?.logOn(this.#loginData);
 
     this.#loginData.authCode = auth;
+    this.name = this.#loginData.accountName;
 
     return;
   }
 
   #bindEvents() {
     this.#steamClient.on('error', (err) => {
-      log(TAG, `Error logging in (${err.eresult})`)
+      log(this.TAG, `Error logging in (${err.eresult})`)
 
       if (err.eresult && login_errors[err.eresult] !== undefined) {
-        log(TAG, login_errors[err.eresult])
+        log(this.TAG, login_errors[err.eresult])
       }
     });
 
     this.#steamClient.on('disconnected', (eresult, msg) => {
-      log(TAG, `Logged off, reconnecting! (${eresult}, ${msg})`)
-
-      console.log('debug', this.#loginData.authCode || '')
+      log(this.TAG, `Logged off, reconnecting! (${eresult}, ${msg})`)
 
       this.login(this.#loginData.accountName, this.#loginData.password, this.#loginData.authCode || '');
     });
 
     this.#steamClient.on('steamGuard', (_, callback) => {
-      log(TAG, `Steam requested Steam Guard Code`);
+      log(this.TAG, `Steam requested Steam Guard Code`);
 
       if (!this.#loginData.authCode) {
-        return log(TAG, `Can't find Steam Guard authentication method.`)
+        return log(this.TAG, `Can't find Steam Guard authentication method.`)
       } else {
         console.log('debug2', this.#loginData.authCode)
       }
-      
+
+      console.time('debugtime');
+
       this.#loginData.twoFactorCode = SteamTotp.getAuthCode(this.#loginData.authCode);
+
+      console.timeEnd('debugtime');
+
       console.log('debug3', this.#loginData.twoFactorCode);
       callback(this.#loginData.twoFactorCode);
     });
 
     this.#steamClient.on('loggedOn', (details, parental) => {
-      log(TAG, `Log on OK`)
+      log(this.TAG, `Log on OK`)
 
       // Fixes reconnecting to CS:GO GC since node-steam-user still assumes we're playing 730
       // and never sends the appLaunched event to node-globaloffensive
@@ -150,39 +154,38 @@ export default class Bot extends EventEmitter {
 
       if (this.#relogin) {
         // Don't check ownership cache since the event isn't always emitted on relogin
-        log(TAG, "Initiating GC Connection, Relogin")
+        log(this.TAG, "Initiating GC Connection, Relogin")
         this.#steamClient.gamesPlayed([730], true);
         return;
       }
 
       // Ensure we own CSGO
       // We have to wait until app ownership is cached to safely check
-      // @ts-ignore
-      this.#steamClient.once('appOwnershipCached', () => {
+      this.#steamClient.once('ownershipCached', () => {
         if (!this.#steamClient.ownsApp(730)) {
-          log(TAG, "Bot doesn't own CS:GO, retrieving free license")
+          log(this.TAG, "Bot doesn't own CS:GO, retrieving free license")
 
           // Request a license for CS:GO
           this.#steamClient.requestFreeLicense([730], (err, grantedPackages, grantedAppIDs) => {
-            log(TAG, `Granted Packages ${grantedPackages.toString()}`);
-            log(TAG, `Granted App IDs ${grantedAppIDs.toString()}`);
+            log(this.TAG, `Granted Packages ${grantedPackages.toString()}`);
+            log(this.TAG, `Granted App IDs ${grantedAppIDs.toString()}`);
 
             if (err) {
-              log(TAG, 'Failed to obtain free CS:GO license');
+              log(this.TAG, 'Failed to obtain free CS:GO license');
             } else {
-              log(TAG, 'Initiating GC Connection');
+              log(this.TAG, 'Initiating GC Connection');
               this.#steamClient.gamesPlayed([730], true);
             }
           });
         } else {
-          log(TAG, 'Initiating GC Connection');
+          log(this.TAG, 'Initiating GC Connection');
           this.#steamClient.gamesPlayed([730], true);
         }
       });
     });
 
     this.#csgoClient.on('inspectItemInfo', (itemData_) => {
-      if (this.#resolve && typeof this.#currentRequest !== 'boolean') {
+      if (this.#resolve && this.#currentRequest) {
         const itemData: ItemData = {
           delay: 0,
           itemid: itemData_.itemid,
@@ -226,50 +229,52 @@ export default class Bot extends EventEmitter {
         itemData.d = this.#currentRequest.d;
         itemData.m = this.#currentRequest.m;
 
-        if (typeof this.#resolve !== 'boolean') {
-          delete itemData.delay;
-          this.#resolve(itemData);
-          this.#resolve = false;
-          this.#currentRequest = false;
+        delete itemData.delay;
+        this.#resolve(itemData);
+        this.#resolve = false;
+        this.#currentRequest = false;
 
-          setTimeout(() => {
-            // We're no longer busy (satisfied request delay)
-            this.busy = false;
-          }, delay);
-        }
+        setTimeout(() => {
+          // We're no longer busy (satisfied request delay)
+          this.busy = false;
+        }, delay);
       }
     });
 
     this.#csgoClient.on('connectedToGC', () => {
-      log(TAG, 'CSGO Client Ready!');
+      log(this.TAG, 'CSGO Client Ready!');
 
       this.loggedIn = true;
     });
 
     this.#csgoClient.on('disconnectedFromGC', (reason) => {
-      log(TAG, `CSGO unready (${reason}), trying to reconnect!`);
+      log(this.TAG, `CSGO unready (${reason}), trying to reconnect!`);
       this.loggedIn = false;
-      this.#busy = false;
+      this.busy = true;
 
       // node-globaloffensive will automatically try to reconnect
     });
 
     this.#csgoClient.on('connectionStatus', (status) => {
-      log(TAG, `GC Connection Status Update ${status}`);
+      log(this.TAG, `GC Connection Status Update ${status}`);
     });
 
     this.#csgoClient.on('debug', (msg) => {
-      log(TAG, `CSGO Debug ${msg}`);
+      log(this.TAG, `CSGO Debug ${msg}`);
     });
   }
 
   sendFloatRequest(params: InspectRequest): Promise<ItemData> {
     return new Promise((resolve, reject) => {
+      if (this.busy || this.#currentRequest) {
+        reject("The bot assigned this task is busy.");
+      }
+
       this.#resolve = resolve;
       this.busy = true;
       this.#currentRequest = params
 
-      log(TAG, `Fetching for ${this.#currentRequest.a}`);
+      log(this.TAG, `Fetching for ${this.#currentRequest.a}`);
 
       if (!this.loggedIn) {
         reject('This bot is not ready');
@@ -298,7 +303,7 @@ export default class Bot extends EventEmitter {
   }
 
   get loggedIn() {
-    return this.#loggedIn || false;
+    return this.#loggedIn;
   }
 
   set busy(val) {
@@ -311,6 +316,6 @@ export default class Bot extends EventEmitter {
   }
 
   get busy() {
-    return this.#busy || false;
+    return this.#busy;
   }
 }

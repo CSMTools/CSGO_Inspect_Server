@@ -11,7 +11,7 @@ import { ItemData, StickerInItem } from "../types/BotTypes";
  * @param {number} rarity
  * @param {number} quality
  * @param {number} paintWear
- * @returns {string} 34-character ID
+ * @returns {string} 35-character ID
  */
 export function createItemID_V1(
     killeaterscoretype: number | null,
@@ -25,7 +25,7 @@ export function createItemID_V1(
     let id = "0";
 
     id += formatKillEaterType(killeaterscoretype);
-    id += formatInt(defIndex, 3);
+    id += formatInt(defIndex, 4);
     id += formatInt(paintIndex, 4);
     id += formatInt(paintSeed, 4);
     id += formatInt(rarity, 2);
@@ -275,6 +275,8 @@ export function deserializeStickerData_V1(data: string) {
     sticker.tint_id = parseInt(matched[6]);
     if (sticker.tint_id === 0) {
         sticker.tint_id = null;
+    } else {
+        sticker.tint_id--;
     }
 
     return sticker;

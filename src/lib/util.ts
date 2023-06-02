@@ -74,3 +74,15 @@ export function getBotTag(username: string): string {
 export function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+/* Randomize array in-place using Durstenfeld shuffle algorithm */
+export function shuffleArray(array: any[]) {
+  let a = [...array];
+
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+
+  return a;
+}

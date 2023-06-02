@@ -29,7 +29,8 @@ const urls = {
     items_game_cdn_url: 'https://raw.githubusercontent.com/SteamDatabase/GameTracking-CSGO/master/csgo/scripts/items/items_game_cdn.txt',
     csgo_english_url: 'https://raw.githubusercontent.com/SteamDatabase/GameTracking-CSGO/master/csgo/resource/csgo_english.txt',
     schema_url: 'https://raw.githubusercontent.com/SteamDatabase/SteamTracking/b5cba7a22ab899d6d423380cff21cec707b7c947/ItemSchema/CounterStrikeGlobalOffensive.json',
-    stickers_url: 'https://bymykel.github.io/CSGO-API/api/en/stickers.json'
+    stickers_url: 'https://bymykel.github.io/CSGO-API/api/en/stickers.json',
+    graffiti_url: 'https://bymykel.github.io/CSGO-API/api/en/graffiti.json'
 }
 
 const fileIds = {
@@ -37,7 +38,8 @@ const fileIds = {
     items_game_cdn: '1',
     csgo_english: '2',
     schema: '3',
-    stickers: '4'
+    stickers: '4',
+    graffiti: '5'
 }
 
 const LanguageHandler = {
@@ -58,6 +60,7 @@ export default class GameData {
     #csgo_english: any;
     #schema: any;
     #stickers: any;
+    #graffiti: any;
 
     constructor() {
         this.#files = new UserFileManager(config.file_location);
@@ -98,7 +101,14 @@ export default class GameData {
                     })
                 this.#files.getFile('localserver', 'game-data', fileIds.stickers)
                     .then((file) => {
-                        this.#stickers = this.#formatStickerFile(JSON.parse(file));
+                        this.#stickers = this.#formatAPIFile(JSON.parse(file));
+                    })
+                    .catch(e => {
+                        this.#reloadFiles();
+                    })
+                this.#files.getFile('localserver', 'game-data', fileIds.graffiti)
+                    .then((file) => {
+                        this.#graffiti = this.#formatAPIFile(JSON.parse(file));
                     })
                     .catch(e => {
                         this.#reloadFiles();
@@ -147,7 +157,6 @@ export default class GameData {
 
             this.#schema = JSON.parse(file)['result'];
         })
-
         this.#downloadFile(urls.stickers_url, (file: string | null): void => {
             if (!file) {
                 return log(TAG, `Failed to download stickers.json`)
@@ -155,7 +164,16 @@ export default class GameData {
 
             this.#files.saveFile('localserver', 'game-data', fileIds.stickers, file);
 
-            this.#stickers = this.#formatStickerFile(JSON.parse(file));
+            this.#stickers = this.#formatAPIFile(JSON.parse(file));
+        })
+        this.#downloadFile(urls.graffiti_url, (file: string | null): void => {
+            if (!file) {
+                return log(TAG, `Failed to download stickers.json`)
+            }
+
+            this.#files.saveFile('localserver', 'game-data', fileIds.graffiti, file);
+
+            this.#graffiti = this.#formatAPIFile(JSON.parse(file));
         })
     }
 
@@ -194,8 +212,22 @@ export default class GameData {
                 continue;
             };
 
-            const stickerFromAPI: StickerDataFromAPI = this.#stickers[`sticker-${sticker.sticker_id}`];
-            
+            let name = this.#csgo_english[kit.item_name.replace('#', '')];
+
+            if (sticker.tint_id) {
+                name += ` (${this.#csgo_english[`Attrib_SprayTintValue_${sticker.tint_id}`]})`;
+            }
+
+            if (name) sticker.name = name;
+
+            let stickerFromAPI: StickerDataFromAPI;
+
+            if (sticker.tint_id) {
+                stickerFromAPI = this.#graffiti[`graffiti-${sticker.sticker_id}`];
+            } else {
+                stickerFromAPI = this.#stickers[`sticker-${sticker.sticker_id}`];
+            }
+
             if (!stickerFromAPI) {
                 continue;
             }
@@ -204,14 +236,6 @@ export default class GameData {
             sticker.rarityname = stickerFromAPI.rarity ?? undefined;
             sticker.codename = kit.name;
             sticker.material = kit.sticker_material;
-
-            let name = this.#csgo_english[kit.item_name.replace('#', '')];
-
-            if (sticker.tint_id) {
-                name += ` (${this.#csgo_english[`Attrib_SprayTintValue_${sticker.tint_id}`]})`;
-            }
-
-            if (name) sticker.name = name;
         }
 
         // Get the skin name
@@ -233,10 +257,14 @@ export default class GameData {
         }
 
         // Get the image url
-        let image_name = weapon_name + skin_name;
+        if (item.defindex === 1348 || item.defindex === 1349) {
+            item.additional.imageurl = this.#graffiti['graffiti-' + item.stickers[0].sticker_id].image;
+        } else {
+            let image_name = weapon_name + skin_name;
 
-        if (image_name in this.#items_game_cdn) {
-            item.additional.imageurl = this.#items_game_cdn[image_name];
+            if (image_name in this.#items_game_cdn) {
+                item.additional.imageurl = this.#items_game_cdn[image_name];
+            }
         }
 
         // Get the paint data and code name
@@ -349,13 +377,13 @@ export default class GameData {
         }
 
         // Patch for items that are stattrak and unusual (ex. Stattrak Karambit)
-        if (item.killeatervalue !== null && item.quality !== 9) {
+        if (item.killeaterscoretype !== null && item.quality !== 9) {
             name += `${this.#csgo_english['strange']} `;
         }
 
         name += `${item.additional.weapon_type} `;
 
-        if (item.additional.weapon_type === 'Sticker' || item.additional.weapon_type === 'Sealed Graffiti') {
+        if (item.additional.weapon_type === 'Sticker' || item.additional.weapon_type === 'Graffiti' || item.additional.weapon_type === 'Sealed Graffiti') {
             name += `| ${item.stickers[0].name}`;
         }
 
@@ -435,7 +463,7 @@ export default class GameData {
         });
     };
 
-    #formatStickerFile(data: StickerDataFromAPI[]) {
+    #formatAPIFile(data: StickerDataFromAPI[]) {
         let object: any = {};
 
         data.forEach(sticker => {
