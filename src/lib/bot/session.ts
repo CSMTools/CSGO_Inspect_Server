@@ -13,7 +13,7 @@ export default class Session {
         return new Promise<string>(async (resolve, reject) => {
             this.TAG = getBotTag(accountName) + 'S';
 
-            if (!this.session || !this.session.accountName) {
+            if (!this.session) {
                 this.session = new LoginSession(EAuthTokenPlatformType.SteamClient);
                 let startResult = await this.session.startWithCredentials({
                     accountName,
@@ -37,6 +37,10 @@ export default class Session {
                 }
             }
 
+            if (!this.session.accountName) {
+                await this.#waitForAuthenticated();
+            }
+
             resolve(this.session.refreshToken);
         })
     }
@@ -49,6 +53,8 @@ export default class Session {
         return new Promise<boolean>((resolve, reject) => {
             if (this.session) {
                 this.session.once("authenticated", () => {
+                    log(this.TAG, "Authenticated")
+
                     resolve(true);
                 });
             }
