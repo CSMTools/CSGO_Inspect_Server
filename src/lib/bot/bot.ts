@@ -31,7 +31,8 @@ import { log, linkToInspectRequest, isInspectLinkValid, getBotTag, sleep } from 
 
 import login_errors from "../enum/BOT_LOGIN_ERRORS.js"
 
-import type { LoginData, ItemData, InspectRequest, BotSettings } from "../types/BotTypes.js"
+import type { LoginData, ItemData, InspectRequest, BotSettings, RefreshLoginData } from "../types/BotTypes.js"
+import Session from './session.js'
 
 export default class Bot extends EventEmitter {
   #loggedIn = false;
@@ -40,15 +41,17 @@ export default class Bot extends EventEmitter {
     enablePicsCache: true,
     autoRelogin: false
   });
+  #session = new Session;
   // @ts-ignore
   #csgoClient: GlobalOffensive = new GlobalOffensive(this.#steamClient);
-  #loginData: LoginData = {
+  #loginData: RefreshLoginData = {
+    refreshToken: '',
+  };
+  #initialLoginData: LoginData = {
     accountName: '',
     password: '',
-    rememberPassword: false,
     authCode: '',
-    twoFactorCode: ''
-  };
+  }
   #resolve: ((value: ItemData) => void) | false = false;
   #currentRequest: InspectRequest | false = false;
   ttlTimeout: NodeJS.Timeout | boolean = false;
@@ -71,42 +74,35 @@ export default class Bot extends EventEmitter {
     setInterval(() => {
       if (this.#csgoClient.haveGCSession) {
         this.#relogin = true;
-        this.login(this.#loginData.accountName, this.#loginData.password, this.#loginData.authCode || '');
+        this.login(this.#initialLoginData.accountName, this.#initialLoginData.password, this.#initialLoginData.authCode);
       }
     }, 30 * 60 * 1000 + variance);
   }
 
   async login(username: string, password: string, auth: string) {
     this.TAG = getBotTag(username);
+
     this.loggedIn = false;
+
+    this.#initialLoginData = {
+      accountName: username,
+      password: password,
+      authCode: auth
+    }
 
     if (this.#steamClient) {
       this.#steamClient.logOff();
-      await sleep(1000)
+      await sleep(1000);
     }
 
     this.#loginData = {
-      accountName: username,
-      password: password,
-      rememberPassword: true,
+      refreshToken: await this.#session.getRefreshToken(username, password, auth)
     };
-
-    if (auth && auth !== '') {
-      // Check if it is a shared_secret
-      if (auth.length <= 5) {
-        this.#loginData.authCode = auth;
-      } else {
-        // Generate the code from the shared_secret
-        log(this.TAG, "Generating 2FA code from shared_secret")
-        this.#loginData.twoFactorCode = SteamTotp.getAuthCode(auth);
-      }
-    }
 
     log(this.TAG, "Logging in...");
     this.#steamClient?.logOn(this.#loginData);
 
-    this.#loginData.authCode = auth;
-    this.name = this.#loginData.accountName;
+    this.name = this.#session.session?.accountName;
 
     return;
   }
@@ -123,26 +119,26 @@ export default class Bot extends EventEmitter {
     this.#steamClient.on('disconnected', (eresult, msg) => {
       log(this.TAG, `Logged off, reconnecting! (${eresult}, ${msg})`)
 
-      this.login(this.#loginData.accountName, this.#loginData.password, this.#loginData.authCode || '');
+      this.login(this.#initialLoginData.accountName, this.#initialLoginData.password, this.#initialLoginData.authCode);
     });
 
     this.#steamClient.on('steamGuard', (_, callback) => {
       log(this.TAG, `Steam requested Steam Guard Code`);
 
-      if (!this.#loginData.authCode) {
+      if (!this.#initialLoginData.authCode) {
         return log(this.TAG, `Can't find Steam Guard authentication method.`)
       } else {
-        console.log('debug2', this.#loginData.authCode)
+        console.log('debug2', this.#initialLoginData.authCode)
       }
 
       console.time('debugtime');
 
-      this.#loginData.twoFactorCode = SteamTotp.getAuthCode(this.#loginData.authCode);
+      let twoFactorCode = SteamTotp.getAuthCode(this.#initialLoginData.authCode);
 
       console.timeEnd('debugtime');
 
-      console.log('debug3', this.#loginData.twoFactorCode);
-      callback(this.#loginData.twoFactorCode);
+      console.log('debug3', twoFactorCode);
+      callback(twoFactorCode);
     });
 
     this.#steamClient.on('loggedOn', (details, parental) => {

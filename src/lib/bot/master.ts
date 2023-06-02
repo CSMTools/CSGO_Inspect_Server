@@ -74,9 +74,7 @@ export default class Master extends EventEmitter {
     let bots = shuffleArray(this.#bots);
 
     for (let bot of bots) {
-      console.log(1, bot.name)
       if (!bot.busy && bot.loggedIn) {
-        console.log(2, bot.name)
         return bot;
       }
     }

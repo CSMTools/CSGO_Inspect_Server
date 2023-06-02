@@ -10,13 +10,13 @@ export default {
         {
             'user': 'USERNAME',
             'pass': 'PASSWORD',
-            // You can use the shared_secret of mobile 2FA
-            'auth': '2FA_TOKEN'
+            // Use the shared_secret of mobile 2FA
+            'auth': 'SHARED_SECRET'
         },
         {
             'user': 'USERNAME_2',
             'pass': 'PASSWORD_2',
-            'auth': '2FA_TOKEN_2'
+            'auth': 'SHARED_SECRET_2'
         }
     ],
     // Bot settings

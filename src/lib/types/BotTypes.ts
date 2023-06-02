@@ -1,11 +1,13 @@
 import { Sticker } from 'globaloffensive'
 
+export type RefreshLoginData = {
+  refreshToken: string;
+}
+
 export type LoginData = {
-  accountName: string,
-  password: string,
-  rememberPassword: boolean,
-  authCode?: string,
-  twoFactorCode?: string
+  accountName: string;
+  password: string;
+  authCode: string;
 }
 
 export type LoginConfig = {
