@@ -4,7 +4,7 @@ import config from "../../../config.js";
 import UserFileManager from "../files/userFiles.js";
 import * as vdf from '../vdf-parser.js';
 import { log } from '../util.js';
-import { ItemData } from '../types/BotTypes.js';
+import { ItemData, StickerInItem } from '../types/BotTypes.js';
 import { StickerDataFromAPI } from '../types/DataManagementTypes.js';
 
 const floatNames = [{
@@ -202,52 +202,10 @@ export default class GameData {
             };
         }
 
-        // Get sticker codename/name
-        const stickerKits = this.#items_game.sticker_kits;
-
-        for (const sticker of item.stickers || []) {
-            const kit = stickerKits[sticker.sticker_id];
-
-            if (!kit) {
-                continue;
-            };
-
-            let name = this.#csgo_english[kit.item_name.replace('#', '')];
-
-            if (sticker.tint_id) {
-                name += ` (${this.#csgo_english[`Attrib_SprayTintValue_${sticker.tint_id}`]})`;
-            }
-
-            if (name) sticker.name = name;
-
-            let stickerFromAPI: StickerDataFromAPI;
-
-            if (sticker.tint_id) {
-                stickerFromAPI = this.#graffiti[`graffiti-${sticker.sticker_id}`];
-            } else {
-                stickerFromAPI = this.#stickers[`sticker-${sticker.sticker_id}`];
-            }
-
-            if (!stickerFromAPI) {
-                continue;
-            }
-
-            sticker.image = stickerFromAPI.image;
-            sticker.rarityname = stickerFromAPI.rarity ?? undefined;
-            sticker.codename = kit.name;
-            sticker.material = kit.sticker_material;
-        }
+        this.populateStickers(item);
 
         // Get the skin name
-        let skin_name = '';
-
-        if (item.paintindex in this.#items_game['paint_kits']) {
-            skin_name = '_' + this.#items_game['paint_kits'][item.paintindex]['name'];
-
-            if (skin_name == '_default') {
-                skin_name = '';
-            }
-        }
+        let skin_name = this.getSkinName(item);
 
         // Get the weapon name
         let weapon_name: string = '';
@@ -257,36 +215,14 @@ export default class GameData {
         }
 
         // Get the image url
-        if (item.defindex === 1348 || item.defindex === 1349) {
-            item.additional.imageurl = this.#graffiti['graffiti-' + item.stickers[0].sticker_id].image;
-        } else {
-            let image_name = weapon_name + skin_name;
-
-            if (image_name in this.#items_game_cdn) {
-                item.additional.imageurl = this.#items_game_cdn[image_name];
-            }
-        }
+        item.additional.imageurl = this.getImageURL(item, weapon_name, skin_name);
 
         // Get the paint data and code name
-        let code_name;
-        let paint_data;
-
-        if (item.paintindex in this.#items_game['paint_kits']) {
-            code_name = this.#items_game['paint_kits'][item.paintindex]['description_tag'].replace('#', '');
-            paint_data = this.#items_game['paint_kits'][item.paintindex];
-        }
-
-        // Get the min float
-        if (paint_data && 'wear_remap_min' in paint_data) {
-            item.additional.floatData.min = parseFloat(paint_data['wear_remap_min']);
-        }
-        else item.additional.floatData.min = 0.06;
-
-        // Get the max float
-        if (paint_data && 'wear_remap_max' in paint_data) {
-            item.additional.floatData.max = parseFloat(paint_data['wear_remap_max']);
-        }
-        else item.additional.floatData.max = 0.8;
+        let code_name = this.getCodeName(item);
+        let paint_data = this.getPaintData(item);
+        
+        // Get the min and max floats
+        [item.additional.floatData.min, item.additional.floatData.max] = this.getFloatLimits(paint_data);
 
         let weapon_data: any;
 
@@ -399,7 +335,118 @@ export default class GameData {
         return name.trim();
     }
 
-    /*
+    getSkinName(item: ItemData) {
+        let skin_name = '';
+
+        if (item.paintindex in this.#items_game['paint_kits']) {
+            skin_name = '_' + this.#items_game['paint_kits'][item.paintindex]['name'];
+
+            if (skin_name == '_default') {
+                skin_name = '';
+            }
+        }
+
+        return skin_name;
+    }
+
+    getImageURL(item: ItemData, weapon_name: string, skin_name: string): string {
+        let imageurl = '';
+
+        if (item.defindex === 1348 || item.defindex === 1349) {
+            imageurl = this.#graffiti['graffiti-' + item.stickers[0].sticker_id].image;
+        } else {
+            let image_name = weapon_name + skin_name;
+
+            if (image_name in this.#items_game_cdn) {
+                imageurl = this.#items_game_cdn[image_name];
+            }
+        }
+
+        return imageurl;
+    }
+
+    getCodeName(item: ItemData) {
+        if (item.paintindex in this.#items_game['paint_kits']) {
+            return this.#items_game['paint_kits'][item.paintindex]['description_tag'].replace('#', '');
+        }
+    }
+
+    getPaintData(item: ItemData) {
+        if (item.paintindex in this.#items_game['paint_kits']) {
+            return this.#items_game['paint_kits'][item.paintindex];
+        }
+    }
+
+    getFloatLimits(paint_data: any): [number, number] {
+        let min = 0.06;
+        let max = 0.8;
+
+        // Get the min float
+        if (paint_data && 'wear_remap_min' in paint_data) {
+            min = parseFloat(paint_data['wear_remap_min']);
+        }
+
+        // Get the max float
+        if (paint_data && 'wear_remap_max' in paint_data) {
+            max = parseFloat(paint_data['wear_remap_max']);
+        }
+
+        return [min, max];
+    }
+
+    /**
+     * Populate multiple stickers with additional data
+     */
+    populateStickers(item: ItemData) {
+        for (const sticker of item.stickers || []) {
+            this.addAdditionalStickerData(sticker);
+        }
+    }
+
+    /**
+     * 
+     * @param {StickerInItem} sticker Sticker to add data to
+     * @returns Same sticker, though it does mutate the one you pass to it, so this is mostly for daisy-chaining.
+     */
+    addAdditionalStickerData(sticker: StickerInItem): StickerInItem {
+        // Get sticker codename/name
+        const stickerKits = this.#items_game.sticker_kits;
+
+        const kit = stickerKits[sticker.sticker_id];
+
+        if (!kit) {
+            return sticker;
+        };
+
+        let name = this.#csgo_english[kit.item_name.replace('#', '')];
+
+        if (sticker.tint_id) {
+            name += ` (${this.#csgo_english[`Attrib_SprayTintValue_${sticker.tint_id}`]})`;
+        }
+
+        if (name) sticker.name = name;
+
+        let stickerFromAPI: StickerDataFromAPI;
+
+        if (sticker.tint_id) {
+            stickerFromAPI = this.#graffiti[`graffiti-${sticker.sticker_id}`];
+        } else {
+            stickerFromAPI = this.#stickers[`sticker-${sticker.sticker_id}`];
+        }
+
+        if (!stickerFromAPI) {
+            return sticker;
+        }
+
+        sticker.image = stickerFromAPI.image;
+        sticker.rarityname = stickerFromAPI.rarity ?? undefined;
+        sticker.codename = kit.name;
+        sticker.material = kit.sticker_material;
+
+        return sticker;
+    }
+
+    /**
         Parses the data of items_game_cdn
     */
     #parseItemsCDN(data: string) {
