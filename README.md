@@ -5,3 +5,9 @@ When contributing, please run before committing:
 ```sh
 yarn compile
 ```
+## For sharp-related issues during install:
+Use:
+```sh
+yarn config set unsafe-perm true
+```
+before installing packages.

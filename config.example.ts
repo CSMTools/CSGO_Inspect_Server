@@ -31,7 +31,8 @@ export default {
     // Choose which features of the server to enable
     'enabled_modules': {
         'file_storage': true,
-        'database': true
+        'database': true,
+        'image_manipulation': true
     },
     // Optionally configure a global rate limit across all endpoints
     'rate_limit': {

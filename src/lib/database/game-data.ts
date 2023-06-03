@@ -322,7 +322,7 @@ export default class GameData {
     getImageURL(item: ItemData, weapon_name: string, skin_name: string): string {
         let imageurl = '';
 
-        if (item.defindex === 1348 || item.defindex === 1349) {
+        if (this.isGraffiti(item)) {
             imageurl = this.#graffiti['graffiti-' + item.stickers[0].sticker_id].image;
         } else {
             let image_name = weapon_name + skin_name;
@@ -427,11 +427,11 @@ export default class GameData {
 
     populateStickers(item: ItemData) {
         for (const sticker of item.stickers || []) {
-            this.addAdditionalStickerData(sticker);
+            this.addAdditionalStickerData(sticker, item);
         }
     }
 
-    addAdditionalStickerData(sticker: StickerInItem): StickerInItem {
+    addAdditionalStickerData(sticker: StickerInItem, item: ItemData): StickerInItem {
         // Get sticker codename/name
         const stickerKits = this.#items_game.sticker_kits;
 
@@ -451,7 +451,7 @@ export default class GameData {
 
         let stickerFromAPI: StickerDataFromAPI;
 
-        if (sticker.tint_id) {
+        if (this.isGraffiti(item)) {
             stickerFromAPI = this.#graffiti[`graffiti-${sticker.sticker_id}`];
         } else {
             stickerFromAPI = this.#stickers[`sticker-${sticker.sticker_id}`];
@@ -467,6 +467,10 @@ export default class GameData {
         sticker.material = kit.sticker_material;
 
         return sticker;
+    }
+
+    isGraffiti(item: ItemData): boolean {
+        return (item.defindex === 1348 || item.defindex === 1349);
     }
 
     /**

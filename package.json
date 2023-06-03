@@ -30,6 +30,7 @@
     "http-proxy-agent": "^5.0.0",
     "prisma": "^4.13.0",
     "rand-user-agent": "^2.0.9",
+    "sharp": "^0.32.1",
     "steam-session": "^1.2.3",
     "steam-totp": "^2.1.2",
     "steam-user": "^4.28.5",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@types/globaloffensive": "^2.3.1",
+    "@types/node": "^20.2.5",
     "@types/steam-totp": "^2.1.0",
     "@types/steam-user": "^4.26.4"
   }
