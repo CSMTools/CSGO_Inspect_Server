@@ -208,11 +208,7 @@ export default class GameData {
         let skin_name = this.getSkinName(item);
 
         // Get the weapon name
-        let weapon_name: string = '';
-
-        if (item.defindex in this.#items_game['items']) {
-            weapon_name = this.#items_game['items'][item.defindex]['name'];
-        }
+        let weapon_name: string = this.getWeaponName(item);
 
         // Get the image url
         item.additional.imageurl = this.getImageURL(item, weapon_name, skin_name);
@@ -224,24 +220,10 @@ export default class GameData {
         // Get the min and max floats
         [item.additional.floatData.min, item.additional.floatData.max] = this.getFloatLimits(paint_data);
 
-        let weapon_data: any;
-
-        if (item.defindex in this.#items_game['items']) {
-            weapon_data = this.#items_game['items'][item.defindex];
-        }
+        let weapon_data = this.getWeaponData(item);
 
         // Get the weapon_hud
-        let weapon_hud: string = '';
-
-        if (weapon_data && 'item_name' in weapon_data) {
-            weapon_hud = weapon_data['item_name'].replace('#', '');
-        } else {
-            // need to find the weapon hud from the prefab
-            if (item.defindex in this.#items_game['items']) {
-                let prefab_val = this.#items_game['items'][item.defindex]['prefab'];
-                weapon_hud = this.#items_game['prefabs'][prefab_val]['item_name'].replace('#', '');
-            }
-        }
+        let weapon_hud: string = this.getWeaponHUD(item, weapon_data);
 
         // Get the skin name if we can
         if (weapon_hud in this.#csgo_english && code_name in this.#csgo_english) {
@@ -249,31 +231,19 @@ export default class GameData {
             item.additional.item_name = this.#csgo_english[code_name];
         }
 
-        // Get the rarity name (Mil-Spec Grade, Covert etc...)
-        const rarityKey = Object.keys(this.#items_game['rarities']).find((key) => {
-            return parseInt(this.#items_game['rarities'][key]['value']) === item.rarity;
-        });
+        let rarity_name = this.getRarityName(item);
 
-        if (rarityKey) {
-            const rarity = this.#items_game['rarities'][rarityKey];
-
-            // Assumes weapons always have a float above 0 and that other items don't
-            // TODO: Improve weapon check if this isn't robust
-            item.additional.rarity_name = this.#csgo_english[rarity[item.paintwear > 0 ? 'loc_key_weapon' : 'loc_key']];
+        if (rarity_name) {
+            item.additional.rarity_name = rarity_name;
         }
 
-        // Get the quality name (Souvenir, Stattrak, etc...)
-        const qualityKey = Object.keys(this.#items_game['qualities']).find((key) => {
-            return parseInt(this.#items_game['qualities'][key]['value']) === item.quality;
-        }) || '';
-
-        item.additional.quality_name = this.#csgo_english[qualityKey];
+        item.additional.quality_name = this.getQualityName(item);
 
         // Get the origin name
-        const origin = this.#schema['originNames'].find((o: any) => o.origin === item.origin);
+        const origin = this.getOriginName(item);
 
         if (origin) {
-            item.additional.origin_name = origin['name'];
+            item.additional.origin_name = origin;
         }
 
         // Get the wear name
@@ -394,20 +364,73 @@ export default class GameData {
         return [min, max];
     }
 
-    /**
-     * Populate multiple stickers with additional data
-     */
+    getWeaponData(item: ItemData) {
+        if (item.defindex in this.#items_game['items']) {
+            return this.#items_game['items'][item.defindex];
+        }
+    }
+
+    getWeaponName(item: ItemData): string {
+        if (item.defindex in this.#items_game['items']) {
+            return this.#items_game['items'][item.defindex]['name'];
+        }
+
+        return '';
+    }
+
+    getWeaponHUD(item: ItemData, weapon_data: any): string {
+        if (weapon_data && 'item_name' in weapon_data) {
+            return weapon_data['item_name'].replace('#', '');
+        } else {
+            // need to find the weapon hud from the prefab
+            if (item.defindex in this.#items_game['items']) {
+                let prefab_val = this.#items_game['items'][item.defindex]['prefab'];
+                return this.#items_game['prefabs'][prefab_val]['item_name'].replace('#', '');
+            }
+        }
+
+        return '';
+    }
+
+    getRarityName(item: ItemData): string | void {
+        // Get the rarity name (Mil-Spec Grade, Covert etc...)
+        const rarityKey = Object.keys(this.#items_game['rarities']).find((key) => {
+            return parseInt(this.#items_game['rarities'][key]['value']) === item.rarity;
+        });
+
+        if (rarityKey) {
+            const rarity = this.#items_game['rarities'][rarityKey];
+
+            // Assumes weapons always have a float above 0 and that other items don't
+            // TODO: Improve weapon check if this isn't robust
+            return this.#csgo_english[rarity[item.paintwear > 0 ? 'loc_key_weapon' : 'loc_key']];
+        }
+    }
+
+    getQualityName(item: ItemData): string  {
+        // Get the quality name (Souvenir, Stattrak, etc...)
+        const qualityKey = Object.keys(this.#items_game['qualities']).find((key) => {
+            return parseInt(this.#items_game['qualities'][key]['value']) === item.quality;
+        }) || '';
+
+        return this.#csgo_english[qualityKey];
+    }
+
+    getOriginName(item: ItemData): string | void {
+        // Get the origin name
+        const origin = this.#schema['originNames'].find((o: any) => o.origin === item.origin);
+
+        if (origin) {
+            return origin['name'];
+        }
+    }
+
     populateStickers(item: ItemData) {
         for (const sticker of item.stickers || []) {
             this.addAdditionalStickerData(sticker);
         }
     }
 
-    /**
-     * 
-     * @param {StickerInItem} sticker Sticker to add data to
-     * @returns Same sticker, though it does mutate the one you pass to it, so this is mostly for daisy-chaining.
-     */
     addAdditionalStickerData(sticker: StickerInItem): StickerInItem {
         // Get sticker codename/name
         const stickerKits = this.#items_game.sticker_kits;
