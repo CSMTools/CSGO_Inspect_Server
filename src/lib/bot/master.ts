@@ -7,6 +7,11 @@ import { BotSettings, InspectRequest, ItemData, LoginConfig } from '../types/Bot
 import DataManager from '../database/index.js';
 import InspectCache from './cache.js';
 import { getItemIDFromItem } from '../database/itemId.js';
+import SteamUser from 'steam-user';
+import CDN from '../database/cdn.js';
+import GameData from '../database/game-data.js';
+
+const TAG = 'Master';
 
 export default class Master extends EventEmitter {
   #inspectQueue: (InspectRequest | null)[] = [];
@@ -16,6 +21,9 @@ export default class Master extends EventEmitter {
   #logins: LoginConfig[];
   #bots: Bot[] = [];
   #inspectCache: InspectCache | null = null;
+  #steamClient: SteamUser = new SteamUser;
+  CDN: CDN = new CDN(this.#steamClient);
+  gameData: GameData = new GameData(this.CDN);
 
   constructor(logins: LoginConfig[], settings: BotSettings, database: DataManager | null = null) {
     super();
@@ -30,6 +38,8 @@ export default class Master extends EventEmitter {
     }
 
     this.#createBots();
+
+    this.#logOnMaster();
   }
 
   #createBots() {
@@ -50,12 +60,12 @@ export default class Master extends EventEmitter {
       this.#bots.push(bot);
 
       if (this.#bots.length === this.#logins.length) {
-        this.#bindEvents();
+        this.#bindBotEvents();
       }
     }
   }
 
-  #bindEvents() {
+  #bindBotEvents() {
     for (let i = 0; i < this.#bots.length; i++) {
       const bot = this.#bots[i];
       const _this = this;
@@ -67,6 +77,15 @@ export default class Master extends EventEmitter {
         this.#botsAvailable--;
       })
     }
+  }
+
+  #logOnMaster() {
+    //@ts-ignore
+    this.#steamClient.logOn({anonymous: true});
+
+    this.#steamClient.on("loggedOn", (details) => {
+      log(TAG, `Logged on as anonymous`);
+    })
   }
 
   #getNonBusyBot(): Bot | false {
@@ -152,7 +171,7 @@ export default class Master extends EventEmitter {
           _this.removeListener('inspectResult', cb);
 
           if (addAdditional) {
-            res = _this.#database?.gameData.addAdditionalItemProperties(res) || res;
+            res = _this.gameData.addAdditionalItemProperties(res) || res;
           }
 
           if (res.itemid.length !== 32) {

@@ -116,3 +116,4 @@ environment.d.ts
 /files
 /.yarn
 /build
+/data

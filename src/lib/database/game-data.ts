@@ -6,6 +6,7 @@ import * as vdf from '../vdf-parser.js';
 import { log } from '../util.js';
 import { ItemData, StickerInItem } from '../types/BotTypes.js';
 import { StickerDataFromAPI } from '../types/DataManagementTypes.js';
+import CDN from './cdn.js';
 
 const floatNames = [{
     range: [0, 0.07],
@@ -29,7 +30,6 @@ const urls = {
     items_game_cdn_url: 'https://raw.githubusercontent.com/SteamDatabase/GameTracking-CSGO/master/csgo/scripts/items/items_game_cdn.txt',
     csgo_english_url: 'https://raw.githubusercontent.com/SteamDatabase/GameTracking-CSGO/master/csgo/resource/csgo_english.txt',
     schema_url: 'https://raw.githubusercontent.com/SteamDatabase/SteamTracking/b5cba7a22ab899d6d423380cff21cec707b7c947/ItemSchema/CounterStrikeGlobalOffensive.json',
-    stickers_url: 'https://bymykel.github.io/CSGO-API/api/en/stickers.json',
     graffiti_url: 'https://bymykel.github.io/CSGO-API/api/en/graffiti.json'
 }
 
@@ -38,7 +38,6 @@ const fileIds = {
     items_game_cdn: '1',
     csgo_english: '2',
     schema: '3',
-    stickers: '4',
     graffiti: '5'
 }
 
@@ -59,11 +58,13 @@ export default class GameData {
     #items_game_cdn: any;
     #csgo_english: any;
     #schema: any;
-    #stickers: any;
     #graffiti: any;
+    #cdn: CDN;
 
-    constructor() {
+    constructor(cdn: CDN) {
         this.#files = new UserFileManager(config.file_location);
+
+        this.#cdn = cdn;
 
         this.#loadFiles();
 
@@ -95,13 +96,6 @@ export default class GameData {
                 this.#files.getFile('localserver', 'game-data', fileIds.schema)
                     .then((file) => {
                         this.#schema = JSON.parse(file)['result'];
-                    })
-                    .catch(e => {
-                        this.#reloadFiles();
-                    })
-                this.#files.getFile('localserver', 'game-data', fileIds.stickers)
-                    .then((file) => {
-                        this.#stickers = this.#formatAPIFile(JSON.parse(file));
                     })
                     .catch(e => {
                         this.#reloadFiles();
@@ -157,18 +151,9 @@ export default class GameData {
 
             this.#schema = JSON.parse(file)['result'];
         })
-        this.#downloadFile(urls.stickers_url, (file: string | null): void => {
-            if (!file) {
-                return log(TAG, `Failed to download stickers.json`)
-            }
-
-            this.#files.saveFile('localserver', 'game-data', fileIds.stickers, file);
-
-            this.#stickers = this.#formatAPIFile(JSON.parse(file));
-        })
         this.#downloadFile(urls.graffiti_url, (file: string | null): void => {
             if (!file) {
-                return log(TAG, `Failed to download stickers.json`)
+                return log(TAG, `Failed to download graffiti.json`)
             }
 
             this.#files.saveFile('localserver', 'game-data', fileIds.graffiti, file);
@@ -202,16 +187,21 @@ export default class GameData {
             };
         }
 
-        this.populateStickers(item);
+        if (this.isGraffiti(item)) {
+            this.addAdditionalGraffitiStickerData(item.stickers[0]);
+        } else if (this.isAgent(item)) {
+
+        } else if (this.isPatch(item)) {
+
+        } else {
+            this.populateStickers(item);
+        }
 
         // Get the skin name
         let skin_name = this.getSkinName(item);
 
         // Get the weapon name
         let weapon_name: string = this.getWeaponName(item);
-
-        // Get the image url
-        item.additional.imageurl = this.getImageURL(item, weapon_name, skin_name);
 
         // Get the paint data and code name
         let code_name = this.getCodeName(item);
@@ -257,6 +247,9 @@ export default class GameData {
 
         if (itemName) {
             item.additional.full_item_name = itemName;
+
+            // Get the image url
+            item.additional.imageurl = this.getImageURLByName(itemName);
         }
 
         return item;
@@ -319,20 +312,8 @@ export default class GameData {
         return skin_name;
     }
 
-    getImageURL(item: ItemData, weapon_name: string, skin_name: string): string {
-        let imageurl = '';
-
-        if (this.isGraffiti(item)) {
-            imageurl = this.#graffiti['graffiti-' + item.stickers[0].sticker_id].image;
-        } else {
-            let image_name = weapon_name + skin_name;
-
-            if (image_name in this.#items_game_cdn) {
-                imageurl = this.#items_game_cdn[image_name];
-            }
-        }
-
-        return imageurl;
+    getImageURLByName(fullItemName: string): string {
+        return this.#cdn.getItemNameURL(fullItemName);
     }
 
     getCodeName(item: ItemData) {
@@ -443,34 +424,68 @@ export default class GameData {
 
         let name = this.#csgo_english[kit.item_name.replace('#', '')];
 
-        if (sticker.tint_id) {
-            name += ` (${this.#csgo_english[`Attrib_SprayTintValue_${sticker.tint_id}`]})`;
-        }
-
         if (name) sticker.name = name;
 
-        let stickerFromAPI: StickerDataFromAPI;
+        sticker.codename = kit.name;
+        sticker.material = kit.sticker_material;
 
-        if (this.isGraffiti(item)) {
-            stickerFromAPI = this.#graffiti[`graffiti-${sticker.sticker_id}`];
-        } else {
-            stickerFromAPI = this.#stickers[`sticker-${sticker.sticker_id}`];
-        }
+        let image = this.#cdn.getStickerURL(kit.sticker_material);
 
-        if (!stickerFromAPI) {
+        if (!image) {
             return sticker;
         }
 
-        sticker.image = stickerFromAPI.image;
-        sticker.rarityname = stickerFromAPI.rarity ?? undefined;
-        sticker.codename = kit.name;
-        sticker.material = kit.sticker_material;
+        sticker.image = image;
 
         return sticker;
     }
 
+    addAdditionalGraffitiStickerData(graffiti: StickerInItem) {
+        // Get graffiti codename/name
+        const stickerKits = this.#items_game.sticker_kits;
+
+        const kit = stickerKits[graffiti.sticker_id];
+
+        if (!kit) {
+            return graffiti;
+        };
+
+        let name = this.#csgo_english[kit.item_name.replace('#', '')];
+
+        if (graffiti.tint_id) {
+            name += ` (${this.#csgo_english[`Attrib_SprayTintValue_${graffiti.tint_id}`]})`;
+        }
+
+        if (name) graffiti.name = name;
+
+        graffiti.codename = kit.name;
+        graffiti.material = kit.sticker_material;
+
+        let image = this.#cdn.getGraffitiNameURL("Sealed Graffiti | " + name);
+
+        if (!image) {
+            return graffiti;
+        }
+
+        graffiti.image = image;
+
+        return graffiti;
+    }
+
     isGraffiti(item: ItemData): boolean {
         return (item.defindex === 1348 || item.defindex === 1349);
+    }
+
+    isSticker(item: ItemData): boolean {
+        return item.defindex === 1209;
+    }
+
+    isPatch(item: ItemData): boolean {
+        return item.defindex === 4609;
+    }
+
+    isAgent(item: ItemData): boolean {
+        return this.#items_game.items[item.defindex.toString()].name.startsWith("customplayer");
     }
 
     /**

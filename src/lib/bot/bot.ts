@@ -100,7 +100,8 @@ export default class Bot extends EventEmitter {
     };
 
     log(this.TAG, "Logging in...");
-    this.#steamClient?.logOn(this.#loginData);
+
+    this.#steamClient.logOn(this.#loginData);
 
     this.name = this.#session.session?.accountName;
 

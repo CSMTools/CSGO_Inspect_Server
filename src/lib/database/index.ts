@@ -6,7 +6,6 @@ import { inspectRequestToInspectFields, linkToInspectRequest, log } from '../uti
 
 import { SteamFriend } from '../types/DataManagementTypes.js';
 import { ItemData, StickerInItem } from '../types/BotTypes.js';
-import GameData from './game-data.js';
 import { deserializeStickerData_V1, serializeStickerData_V1 } from './itemId.js';
 import config from '../../../config.js';
 
@@ -19,16 +18,12 @@ export default class DataManager {
   #steamApiKey: string;
   #scraper: Scraper;
 
-  gameData: GameData;
-
   constructor(steamApiKey: string) {
     this.#steamApiKey = steamApiKey;
 
     this.#scraper = new Scraper();
 
     this.#init();
-
-    this.gameData = new GameData;
   }
 
   #init() {
