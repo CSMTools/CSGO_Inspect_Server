@@ -7,6 +7,7 @@ import { log } from '../util.js';
 import { ItemData, StickerInItem } from '../types/BotTypes.js';
 import { StickerDataFromAPI } from '../types/DataManagementTypes.js';
 import CDN from './cdn.js';
+import { phase } from 'csgo-cdn';
 
 const floatNames = [{
     range: [0, 0.07],
@@ -212,14 +213,10 @@ export default class GameData {
 
         let weapon_data = this.getWeaponData(item);
 
-        // Get the weapon_hud
-        let weapon_hud: string = this.getWeaponHUD(item, weapon_data);
+        let { weapon_type, item_name } = this.getEnglishWeaponName(item, weapon_data, code_name);
 
-        // Get the skin name if we can
-        if (weapon_hud in this.#csgo_english && code_name in this.#csgo_english) {
-            item.additional.weapon_type = this.#csgo_english[weapon_hud];
-            item.additional.item_name = this.#csgo_english[code_name];
-        }
+        item.additional.weapon_type = weapon_type;
+        item.additional.item_name = item_name;
 
         let rarity_name = this.getRarityName(item);
 
@@ -253,6 +250,24 @@ export default class GameData {
         }
 
         return item;
+    }
+
+    getEnglishWeaponName(item: ItemData, weapon_data: any, code_name: string) {
+        const result = {
+            weapon_type: '',
+            item_name: ''
+        };
+
+        // Get the weapon_hud
+        let weapon_hud: string = this.getWeaponHUD(item, weapon_data);
+
+        // Get the skin name if we can
+        if (weapon_hud in this.#csgo_english && code_name in this.#csgo_english) {
+            result.weapon_type = this.#csgo_english[weapon_hud];
+            result.item_name = this.#csgo_english[code_name];
+        }
+
+        return result;
     }
 
     getWearName(float: number) {
@@ -313,7 +328,7 @@ export default class GameData {
     }
 
     getImageURLByName(fullItemName: string): string {
-        return this.#cdn.getItemNameURL(fullItemName);
+        return this.#cdn.getItemNameURL(fullItemName, "emerald");
     }
 
     getCodeName(item: ItemData) {

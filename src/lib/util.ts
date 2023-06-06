@@ -86,3 +86,16 @@ export function shuffleArray(array: any[]) {
 
   return a;
 }
+
+export function isFade(paintIndex: number): boolean {
+  return paintIndex === 38;
+}
+
+export function isAmberFade(paintIndex: number): boolean {
+  return paintIndex === 246;
+}
+
+export function isAcidFade(paintIndex: number): boolean {
+  return paintIndex === 253;
+}
+

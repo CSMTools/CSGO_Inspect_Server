@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 
 import Bot from './bot.js';
-import { inspectRequestToInspectFields, linkToInspectRequest, log, shuffleArray } from '../util.js';
+import { inspectRequestToInspectFields, isAcidFade, isAmberFade, isFade, linkToInspectRequest, log, shuffleArray } from '../util.js';
 
 import { BotSettings, InspectRequest, ItemData, LoginConfig } from '../types/BotTypes';
 import DataManager from '../database/index.js';
@@ -11,11 +11,12 @@ import SteamUser from 'steam-user';
 import CDN from '../database/cdn.js';
 import GameData from '../database/game-data.js';
 
+const { AcidFadeCalculator, AmberFadeCalculator, FadeCalculator } = await import('csgo-fade-percentage-calculator');
+
 const TAG = 'Master';
 
 export default class Master extends EventEmitter {
   #inspectQueue: (InspectRequest | null)[] = [];
-  #database: DataManager | null;
   #botsAvailable: number = 0;
   #settings: BotSettings;
   #logins: LoginConfig[];
@@ -30,8 +31,6 @@ export default class Master extends EventEmitter {
 
     this.#logins = logins;
     this.#settings = settings;
-
-    this.#database = database;
 
     if (database !== null) {
       this.#inspectCache = new InspectCache(database);
@@ -125,6 +124,17 @@ export default class Master extends EventEmitter {
     if (bot) {
       bot.sendFloatRequest(inspectData)
         .then((res) => {
+          // Calculate fade percentage if applicable
+          const weaponName = this.gameData.getEnglishWeaponName(res, this.gameData.getWeaponData(res), this.gameData.getCodeName(res)).weapon_type;
+
+          if (isFade(res.paintindex)) {
+            res.fadePercentage = FadeCalculator.getFadePercentage(weaponName, res.paintseed).percentage;
+          } else if (isAmberFade(res.paintindex)) {
+            res.fadePercentage = AmberFadeCalculator.getFadePercentage(weaponName, res.paintseed).percentage;
+          } else if (isAcidFade(res.paintindex)) {
+            res.fadePercentage = AcidFadeCalculator.getFadePercentage(weaponName, res.paintseed).percentage;
+          }
+
           this.emit('inspectResult', res);
 
           // The saving process not being awaited is intentional, as it is not neccessary to accomplish the request and can be side-lined.
@@ -174,7 +184,7 @@ export default class Master extends EventEmitter {
             res = _this.gameData.addAdditionalItemProperties(res) || res;
           }
 
-          if (res.itemid.length !== 32) {
+          if (res.itemid.length !== 35) {
             res.itemid = getItemIDFromItem(res);
           }
 

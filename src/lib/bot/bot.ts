@@ -23,7 +23,7 @@ SOFTWARE.*/
 
 
 import SteamUser from 'steam-user'
-import GlobalOffensive from 'globaloffensive'
+import GlobalOffensive, { ItemInfo } from 'globaloffensive'
 import SteamTotp from 'steam-totp'
 import { EventEmitter } from 'events'
 
@@ -181,8 +181,11 @@ export default class Bot extends EventEmitter {
       });
     });
 
-    this.#csgoClient.on('inspectItemInfo', (itemData_) => {
+    this.#csgoClient.on('inspectItemInfo', (itemData_: ItemInfo) => {
       if (this.#resolve && this.#currentRequest) {
+        // Ensure the received itemid is the same as what we want
+        if (itemData_.itemid !== this.#currentRequest.a) return;
+        
         const itemData: ItemData = {
           delay: 0,
           itemid: itemData_.itemid,
@@ -192,7 +195,7 @@ export default class Bot extends EventEmitter {
           quality: itemData_.quality,
           killeatervalue: itemData_.killeatervalue || 0,
           killeaterscoretype: itemData_.killeaterscoretype,
-          paintseed: itemData_.paintseed || 0,
+          paintseed: itemData_.paintseed,
           origin: itemData_.origin,
           customname: itemData_.customname,
           s: '',
@@ -200,11 +203,9 @@ export default class Bot extends EventEmitter {
           d: '',
           m: '',
           paintwear: itemData_.paintwear,
-          stickers: itemData_.stickers
+          stickers: itemData_.stickers,
+          fadePercentage: null
         };
-
-        // Ensure the received itemid is the same as what we want
-        if (itemData.itemid !== this.#currentRequest.a) return;
 
         // Clear any TTL timeout
         if (typeof this.ttlTimeout !== 'boolean') {

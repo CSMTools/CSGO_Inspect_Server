@@ -29,9 +29,10 @@ model steam_item {
   killeaterscoretype  Int?
   killeatervalue      Int
   customname          String?
-  paintseed           Int?
+  paintseed           Int
   paintwear           Float
   origin              Int
+  fadePercentage      Float?
   latest_stickers     String[]
   ownerId             String
   ownerHistory        String[]

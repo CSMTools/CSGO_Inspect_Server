@@ -290,6 +290,7 @@ export default class DataManager {
       paintseed: item.paintseed,
       paintwear: item.paintwear,
       origin: item.origin,
+      fadePercentage: item.fadePercentage,
       s: ir?.s ?? '',
       a: ir?.a ?? '',
       d: ir?.d ?? '',
