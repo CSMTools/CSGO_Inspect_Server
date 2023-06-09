@@ -2,7 +2,7 @@ import * as https from 'https';
 
 import config from "../../../config.js";
 import UserFileManager from "../files/userFiles.js";
-import * as vdf from '../vdf-parser.js';
+import * as vdf from 'simple-vdf3';
 import { log } from '../util.js';
 import { ItemData, StickerInItem } from '../types/BotTypes.js';
 import { StickerDataFromAPI } from '../types/DataManagementTypes.js';
