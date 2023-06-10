@@ -1,7 +1,6 @@
 import { PrismaClient, steam_item } from '@prisma/client'
 
-import Master from '../bot/master.js';
-import Scraper from './web_scraper/index.js';
+//import Scraper from './web_scraper/index.js';
 import { inspectRequestToInspectFields, linkToInspectRequest, log } from '../util.js'
 
 import { SteamFriend } from '../types/DataManagementTypes.js';
@@ -16,12 +15,12 @@ const TAG = '\x1b[31mDATABASE\x1b[0m'
 export default class DataManager {
   requestsToday: number = 0;
   #steamApiKey: string;
-  #scraper: Scraper;
+  //#scraper: Scraper;
 
   constructor(steamApiKey: string) {
     this.#steamApiKey = steamApiKey;
 
-    this.#scraper = new Scraper();
+    //this.#scraper = new Scraper();
 
     this.#init();
   }
@@ -104,6 +103,7 @@ export default class DataManager {
           paintwear: data.paintwear,
           origin: data.origin,
           latest_stickers: this.#serializeStickers(data.stickers),
+          fadePercentage: data.fadePercentage,
 
           ownerHistory: [ownerId],
           last_update: Date.now()
@@ -240,9 +240,9 @@ export default class DataManager {
   async collectFriendsOfUser(steamId: string): Promise<SteamFriend[]> {
     return new Promise<SteamFriend[]>(async (resolve, reject) => {
       try {
-        let friends = await this.#scraper.getFriends(steamId);
+        /*let friends = await this.#scraper.getFriends(steamId);
 
-        resolve(friends);
+        resolve(friends);*/
       } catch (e) {
         resolve([]);
       }

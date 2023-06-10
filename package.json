@@ -1,6 +1,6 @@
 {
   "name": "csgo_inspect_api",
-  "version": "0.1.0",
+  "version": "0.1.0-beta",
   "description": "Express API in Node.js that allows you to inspect skins and other items.",
   "main": "build/index.js",
   "type": "module",

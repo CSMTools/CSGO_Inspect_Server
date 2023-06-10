@@ -1,5 +1,9 @@
 import { EventEmitter } from 'events';
 
+// These lines make "require" available
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+
 import Bot from './bot.js';
 import { inspectRequestToInspectFields, isAcidFade, isAmberFade, isFade, linkToInspectRequest, log, shuffleArray } from '../util.js';
 
@@ -11,7 +15,7 @@ import SteamUser from 'steam-user';
 import CDN from '../database/cdn.js';
 import GameData from '../database/game-data.js';
 
-const { AcidFadeCalculator, AmberFadeCalculator, FadeCalculator } = await import('csgo-fade-percentage-calculator');
+const { AcidFadeCalculator, AmberFadeCalculator, FadeCalculator } = require('csgo-fade-percentage-calculator');
 
 const TAG = 'Master';
 

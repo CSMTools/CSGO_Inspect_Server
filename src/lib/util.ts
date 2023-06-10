@@ -90,11 +90,11 @@ export function shuffleArray(array: any[]) {
 }
 
 export function isFade(paintIndex: number): boolean {
-  return paintIndex === 38;
+  return [38, 522, 1026].includes(paintIndex);
 }
 
 export function isAmberFade(paintIndex: number): boolean {
-  return paintIndex === 246;
+  return [246, 523].includes(paintIndex);
 }
 
 export function isAcidFade(paintIndex: number): boolean {

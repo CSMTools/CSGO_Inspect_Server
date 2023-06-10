@@ -17,6 +17,7 @@
   },
 
   "exclude": [
-    "config.example.ts"
+    "config.example.ts",
+    "src/lib/database/web_scraper/*"
   ]
 }
