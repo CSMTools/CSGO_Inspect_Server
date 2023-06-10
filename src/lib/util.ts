@@ -90,7 +90,7 @@ export function shuffleArray(array: any[]) {
 }
 
 export function isFade(paintIndex: number): boolean {
-  return [38, 522, 1026].includes(paintIndex);
+  return [38, 522, 752, 1026].includes(paintIndex);
 }
 
 export function isAmberFade(paintIndex: number): boolean {
