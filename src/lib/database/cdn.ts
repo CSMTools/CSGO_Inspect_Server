@@ -7,12 +7,4 @@ export default class CDN extends csgoCDN {
     constructor(user: SteamUser) {
         super(user, { directory: 'files/data' });
     }
-
-    getItemNameURL(marketHashName: string, phase?: PhaseValue): string | void {
-        console.time('getUrl');
-        let url = super.getItemNameURL(marketHashName, phase);
-        console.timeEnd('getUrl');
-
-        return url;
-    }
 }

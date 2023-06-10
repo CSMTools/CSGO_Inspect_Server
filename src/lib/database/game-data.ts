@@ -3,10 +3,11 @@ import * as https from 'https';
 import config from "../../../config.js";
 import UserFileManager from "../files/userFiles.js";
 import * as vdf from 'simple-vdf3';
-import { log } from '../util.js';
+import { getPhaseValue, log } from '../util.js';
 import { ItemData, StickerInItem } from '../types/BotTypes.js';
 import { StickerDataFromAPI } from '../types/DataManagementTypes.js';
 import CDN from './cdn.js';
+import { isDoppler } from '../../data/items/DopplerPhases.js';
 
 const floatNames = [{
     range: [0, 0.07],
@@ -226,7 +227,17 @@ export default class GameData {
             item.additional.full_item_name = itemName;
 
             // Get the image url
-            item.additional.imageurl = this.getImageURLByName(itemName);
+            let image;
+
+            if (isDoppler(item.paintindex)) {
+                image = this.#cdn.getItemNameURL(itemName, getPhaseValue(item.paintindex));
+            } else {
+                image = this.#cdn.getItemNameURL(itemName);
+            }
+
+            if (image) {
+                item.additional.imageurl = image;
+            }
         }
 
         return item;
@@ -305,10 +316,6 @@ export default class GameData {
         }
 
         return skin_name;
-    }
-
-    getImageURLByName(fullItemName: string): string {
-        return this.#cdn.getItemNameURL(fullItemName, this.#cdn.phase.emerald) || '';
     }
 
     getCodeName(item: ItemData) {

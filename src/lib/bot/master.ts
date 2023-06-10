@@ -36,7 +36,9 @@ export default class Master extends EventEmitter {
       this.#inspectCache = new InspectCache(database);
     }
 
-    this.#createBots();
+    this.CDN.on('ready', () => {
+      this.#createBots();
+    })
 
     this.#logOnMaster();
   }

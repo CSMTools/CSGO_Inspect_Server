@@ -1,4 +1,6 @@
+import cdn, { PhaseValue, Phases } from "cs2-cdn";
 import { InspectRequest } from "./types/BotTypes.js";
+import { DopplerData, getDopplerType } from "../data/items/DopplerPhases.js";
 
 export function log(tag: string, message: string) {
   console.log(`log(${tag}, ${Math.floor(process.uptime())}s): ${message};`)
@@ -99,3 +101,9 @@ export function isAcidFade(paintIndex: number): boolean {
   return paintIndex === 253;
 }
 
+export function getPhaseValue(paintIndex: number): PhaseValue {
+  const type = getDopplerType(paintIndex);
+  let normalizedName = DopplerData[type][paintIndex].name.toLowerCase().replaceAll(" ", "");
+
+  return cdn.phase[normalizedName as keyof Phases];
+}
