@@ -7,7 +7,6 @@ import { log } from '../util.js';
 import { ItemData, StickerInItem } from '../types/BotTypes.js';
 import { StickerDataFromAPI } from '../types/DataManagementTypes.js';
 import CDN from './cdn.js';
-import { phase } from 'csgo-cdn';
 
 const floatNames = [{
     range: [0, 0.07],
@@ -30,8 +29,7 @@ const urls = {
     items_game_url: 'https://raw.githubusercontent.com/SteamDatabase/GameTracking-CSGO/master/csgo/scripts/items/items_game.txt',
     items_game_cdn_url: 'https://raw.githubusercontent.com/SteamDatabase/GameTracking-CSGO/master/csgo/scripts/items/items_game_cdn.txt',
     csgo_english_url: 'https://raw.githubusercontent.com/SteamDatabase/GameTracking-CSGO/master/csgo/resource/csgo_english.txt',
-    schema_url: 'https://raw.githubusercontent.com/SteamDatabase/SteamTracking/b5cba7a22ab899d6d423380cff21cec707b7c947/ItemSchema/CounterStrikeGlobalOffensive.json',
-    graffiti_url: 'https://bymykel.github.io/CSGO-API/api/en/graffiti.json'
+    schema_url: 'https://raw.githubusercontent.com/SteamDatabase/SteamTracking/b5cba7a22ab899d6d423380cff21cec707b7c947/ItemSchema/CounterStrikeGlobalOffensive.json'
 }
 
 const fileIds = {
@@ -39,7 +37,6 @@ const fileIds = {
     items_game_cdn: '1',
     csgo_english: '2',
     schema: '3',
-    graffiti: '5'
 }
 
 const LanguageHandler = {
@@ -59,7 +56,6 @@ export default class GameData {
     #items_game_cdn: any;
     #csgo_english: any;
     #schema: any;
-    #graffiti: any;
     #cdn: CDN;
 
     constructor(cdn: CDN) {
@@ -97,13 +93,6 @@ export default class GameData {
                 this.#files.getFile('localserver', 'game-data', fileIds.schema)
                     .then((file) => {
                         this.#schema = JSON.parse(file)['result'];
-                    })
-                    .catch(e => {
-                        this.#reloadFiles();
-                    })
-                this.#files.getFile('localserver', 'game-data', fileIds.graffiti)
-                    .then((file) => {
-                        this.#graffiti = this.#formatAPIFile(JSON.parse(file));
                     })
                     .catch(e => {
                         this.#reloadFiles();
@@ -151,15 +140,6 @@ export default class GameData {
             this.#files.saveFile('localserver', 'game-data', fileIds.schema, file);
 
             this.#schema = JSON.parse(file)['result'];
-        })
-        this.#downloadFile(urls.graffiti_url, (file: string | null): void => {
-            if (!file) {
-                return log(TAG, `Failed to download graffiti.json`)
-            }
-
-            this.#files.saveFile('localserver', 'game-data', fileIds.graffiti, file);
-
-            this.#graffiti = this.#formatAPIFile(JSON.parse(file));
         })
     }
 
@@ -328,7 +308,7 @@ export default class GameData {
     }
 
     getImageURLByName(fullItemName: string): string {
-        return this.#cdn.getItemNameURL(fullItemName, "emerald");
+        return this.#cdn.getItemNameURL(fullItemName, this.#cdn.phase.emerald) || '';
     }
 
     getCodeName(item: ItemData) {
