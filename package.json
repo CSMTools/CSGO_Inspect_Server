@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wavpro/CSGO_Inspect_API.git"
+    "url": "git+https://github.com/CSMTools/CSGO_Inspect_Server.git"
   },
   "author": "wavpro",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/wavpro/CSGO_Inspect_API/issues"
+    "url": "https://github.com/CSMTools/CSGO_Inspect_Server/issues"
   },
-  "homepage": "https://github.com/wavpro/CSGO_Inspect_API#readme",
+  "homepage": "https://github.com/CSMTools/CSGO_Inspect_Server#readme",
   "dependencies": {
     "@fastify/rate-limit": "^8.0.0",
     "@prisma/client": "^4.13.0",
