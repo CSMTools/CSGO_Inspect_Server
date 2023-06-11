@@ -101,6 +101,10 @@ export function isAcidFade(paintIndex: number): boolean {
   return paintIndex === 253;
 }
 
+export function isBerriesAndCherries(paintIndex: number): boolean {
+  return paintIndex === 1002;
+}
+
 export function getPhaseValue(paintIndex: number): PhaseValue {
   const type = getDopplerType(paintIndex);
   let normalizedName = DopplerData[type][paintIndex].name.toLowerCase().replaceAll(" ", "");
