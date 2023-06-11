@@ -27,17 +27,11 @@ const floatNames = [{
 }];
 
 const urls = {
-    items_game_url: 'https://raw.githubusercontent.com/SteamDatabase/GameTracking-CSGO/master/csgo/scripts/items/items_game.txt',
-    items_game_cdn_url: 'https://raw.githubusercontent.com/SteamDatabase/GameTracking-CSGO/master/csgo/scripts/items/items_game_cdn.txt',
-    csgo_english_url: 'https://raw.githubusercontent.com/SteamDatabase/GameTracking-CSGO/master/csgo/resource/csgo_english.txt',
-    schema_url: 'https://raw.githubusercontent.com/SteamDatabase/SteamTracking/b5cba7a22ab899d6d423380cff21cec707b7c947/ItemSchema/CounterStrikeGlobalOffensive.json'
+    schema_url: 'https://raw.githubusercontent.com/SteamDatabase/SteamTracking/b5cba7a22ab899d6d423380cff21cec707b7c947/ItemSchema/CounterStrikeGlobalOffensive.json',
 }
 
 const fileIds = {
-    items_game: '0',
-    items_game_cdn: '1',
-    csgo_english: '2',
-    schema: '3',
+    schema: '0',
 }
 
 const LanguageHandler = {
@@ -53,16 +47,13 @@ const TAG = 'game-data'
 
 export default class GameData {
     #files: UserFileManager;
-    #items_game: any;
-    #items_game_cdn: any;
-    #csgo_english: any;
     #schema: any;
-    #cdn: CDN;
+    cdn: CDN;
 
     constructor(cdn: CDN) {
         this.#files = new UserFileManager(config.file_location);
 
-        this.#cdn = cdn;
+        this.cdn = cdn;
 
         this.#loadFiles();
 
@@ -72,32 +63,9 @@ export default class GameData {
     }
 
     #loadFiles(): void {
-        this.#files.getFile('localserver', 'game-data', fileIds.items_game)
+        this.#files.getFile('localserver', 'game-data', fileIds.schema)
             .then((file) => {
-                this.#items_game = vdf.parse(file)['items_game'];
-
-                this.#files.getFile('localserver', 'game-data', fileIds.items_game_cdn)
-                    .then((file) => {
-                        this.#items_game_cdn = this.#parseItemsCDN(file);
-                    })
-                    .catch(e => {
-                        this.#reloadFiles();
-                    })
-                this.#files.getFile('localserver', 'game-data', fileIds.csgo_english)
-                    .then((file) => {
-                        this.#csgo_english = this.#objectKeysToLowerCase(vdf.parse(file)['lang']['Tokens']);
-                        this.#csgo_english = new Proxy(this.#csgo_english, LanguageHandler);
-                    })
-                    .catch(e => {
-                        this.#reloadFiles();
-                    })
-                this.#files.getFile('localserver', 'game-data', fileIds.schema)
-                    .then((file) => {
-                        this.#schema = JSON.parse(file)['result'];
-                    })
-                    .catch(e => {
-                        this.#reloadFiles();
-                    })
+                this.#schema = JSON.parse(file)['result'];
             })
             .catch(e => {
                 this.#reloadFiles();
@@ -105,34 +73,6 @@ export default class GameData {
     }
 
     #reloadFiles() {
-        this.#downloadFile(urls.items_game_url, (file: string | null): void => {
-            if (!file) {
-                return log(TAG, `Failed to download items_game`)
-            }
-
-            this.#files.saveFile('localserver', 'game-data', fileIds.items_game, file);
-
-            this.#items_game = vdf.parse(file)['items_game'];
-        })
-        this.#downloadFile(urls.items_game_cdn_url, (file: string | null): void => {
-            if (!file) {
-                return log(TAG, `Failed to download items_game_cdn`);
-            }
-
-            this.#files.saveFile('localserver', 'game-data', fileIds.items_game_cdn, file)
-
-            this.#items_game_cdn = this.#parseItemsCDN(file);
-        })
-        this.#downloadFile(urls.csgo_english_url, (file: string | null): void => {
-            if (!file) {
-                return log(TAG, `Failed to download csgo_english`)
-            }
-
-            this.#files.saveFile('localserver', 'game-data', fileIds.csgo_english, file);
-
-            this.#csgo_english = this.#objectKeysToLowerCase(vdf.parse(file)['lang']['Tokens']);
-            this.#csgo_english = new Proxy(this.#csgo_english, LanguageHandler);
-        })
         this.#downloadFile(urls.schema_url, (file: string | null): void => {
             if (!file) {
                 return log(TAG, `Failed to download schema`)
@@ -148,7 +88,7 @@ export default class GameData {
         Given returned iteminfo, finds the item's min/max float, name, weapon type, and image url using CSGO game data
     */
     addAdditionalItemProperties(item: ItemData) {
-        if (!this.#items_game || !this.#items_game_cdn || !this.#csgo_english) {
+        if (!this.#items_game || !this.#items_game_cdn || !this.#cs_english) {
             return item;
         };
 
@@ -230,9 +170,9 @@ export default class GameData {
             let image;
 
             if (isDoppler(item.paintindex)) {
-                image = this.#cdn.getItemNameURL(itemName, getPhaseValue(item.paintindex));
+                image = this.cdn.getItemNameURL(itemName, getPhaseValue(item.paintindex));
             } else {
-                image = this.#cdn.getItemNameURL(itemName);
+                image = this.cdn.getItemNameURL(itemName);
             }
 
             if (image) {
@@ -253,9 +193,9 @@ export default class GameData {
         let weapon_hud: string = this.getWeaponHUD(item, weapon_data);
 
         // Get the skin name if we can
-        if (weapon_hud in this.#csgo_english && code_name in this.#csgo_english) {
-            result.weapon_type = this.#csgo_english[weapon_hud];
-            result.item_name = this.#csgo_english[code_name];
+        if (weapon_hud in this.#cs_english && code_name in this.#cs_english) {
+            result.weapon_type = this.#cs_english[weapon_hud];
+            result.item_name = this.#cs_english[code_name];
         }
 
         return result;
@@ -265,7 +205,7 @@ export default class GameData {
         const f = floatNames.find((f) => float > f.range[0] && float <= f.range[1]);
 
         if (f) {
-            return this.#csgo_english[f['name']];
+            return this.#cs_english[f['name']];
         }
     }
 
@@ -283,7 +223,7 @@ export default class GameData {
 
         // Patch for items that are stattrak and unusual (ex. Stattrak Karambit)
         if (item.killeaterscoretype !== null && item.quality !== 9) {
-            name += `${this.#csgo_english['strange']} `;
+            name += `${this.#cs_english['strange']} `;
         }
 
         name += `${item.additional.weapon_type} `;
@@ -386,7 +326,7 @@ export default class GameData {
 
             // Assumes weapons always have a float above 0 and that other items don't
             // TODO: Improve weapon check if this isn't robust
-            return this.#csgo_english[rarity[item.paintwear > 0 ? 'loc_key_weapon' : 'loc_key']];
+            return this.#cs_english[rarity[item.paintwear > 0 ? 'loc_key_weapon' : 'loc_key']];
         }
     }
 
@@ -396,7 +336,7 @@ export default class GameData {
             return parseInt(this.#items_game['qualities'][key]['value']) === item.quality;
         }) || '';
 
-        return this.#csgo_english[qualityKey];
+        return this.#cs_english[qualityKey];
     }
 
     getOriginName(item: ItemData): string | void {
@@ -424,20 +364,18 @@ export default class GameData {
             return sticker;
         };
 
-        let name = this.#csgo_english[kit.item_name.replace('#', '')];
+        let name = this.#cs_english[kit.item_name.replace('#', '')];
 
         if (name) sticker.name = name;
 
         sticker.codename = kit.name;
         sticker.material = kit.sticker_material;
 
-        let image = this.#cdn.getStickerURL(kit.sticker_material);
+        let image = this.cdn.getStickerURL(kit.sticker_material);
 
-        if (!image) {
-            return sticker;
+        if (image) {
+            sticker.image = image;
         }
-
-        sticker.image = image;
 
         return sticker;
     }
@@ -452,10 +390,10 @@ export default class GameData {
             return graffiti;
         };
 
-        let name = this.#csgo_english[kit.item_name.replace('#', '')];
+        let name = this.#cs_english[kit.item_name.replace('#', '')];
 
         if (graffiti.tint_id) {
-            name += ` (${this.#csgo_english[`Attrib_SprayTintValue_${graffiti.tint_id}`]})`;
+            name += ` (${this.#cs_english[`Attrib_SprayTintValue_${graffiti.tint_id}`]})`;
         }
 
         if (name) graffiti.name = name;
@@ -463,7 +401,7 @@ export default class GameData {
         graffiti.codename = kit.name;
         graffiti.material = kit.sticker_material;
 
-        let image = this.#cdn.getGraffitiNameURL("Sealed Graffiti | " + name);
+        let image = this.cdn.getGraffitiNameURL("Sealed Graffiti | " + name);
 
         if (!image) {
             return graffiti;
@@ -488,43 +426,6 @@ export default class GameData {
 
     isAgent(item: ItemData): boolean {
         return this.#items_game.items[item.defindex.toString()].name.startsWith("customplayer");
-    }
-
-    /**
-        Parses the data of items_game_cdn
-    */
-    #parseItemsCDN(data: string) {
-        let lines = data.split('\n');
-
-        const result: any = {};
-
-        for (let line of lines) {
-            let kv = line.split('=');
-
-            if (kv[1]) {
-                result[kv[0]] = kv[1];
-            }
-        }
-
-        return result;
-    }
-
-    /*
-        Calls toLowerCase on all object shallow keys, modifies in-place, not pure
-     */
-    #objectKeysToLowerCase(obj: any) {
-        const keys = Object.keys(obj);
-        let n = keys.length;
-        while (n--) {
-            const key = keys[n];
-            const lower = key.toLowerCase();
-            if (key !== lower) {
-                obj[lower] = obj[key];
-                delete obj[key];
-            }
-        }
-
-        return obj;
     }
 
     #downloadFile(url: string, cb: ((file: string | null) => void)) {
@@ -554,13 +455,15 @@ export default class GameData {
         });
     };
 
-    #formatAPIFile(data: StickerDataFromAPI[]) {
-        let object: any = {};
+    get #cs_english() {
+        return this.cdn.csEnglish;
+    }
 
-        data.forEach(sticker => {
-            object[sticker.id] = sticker;
-        })
+    get #items_game_cdn() {
+        return this.cdn.itemsGameCDN;
+    }
 
-        return object;
+    get #items_game() {
+        return this.cdn.itemsGame;
     }
 }

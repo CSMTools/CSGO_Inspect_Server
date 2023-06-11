@@ -502,10 +502,10 @@ crc@^3.3.0:
   dependencies:
     buffer "^5.1.0"
 
-cs2-cdn@^1.2.1:
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/cs2-cdn/-/cs2-cdn-1.2.1.tgz#3d515dabb05c4a1ce6410973bbf49edbd4f7a125"
-  integrity sha512-yDslJ0v70fR+W6lrAUyXe02zR/3ZAK3GPhY0m8dVS9sd2xuWHat1jvAIp9zw7RNyPAl/JwIeYyqkBhmSnHl5sw==
+cs2-cdn@^1.2.2:
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/cs2-cdn/-/cs2-cdn-1.2.2.tgz#758033e60211f68a7c142301a1094fa215ac42a0"
+  integrity sha512-21sX3PBaN6M7U26iIyoqrclYyVYDhimUnfXgVBQ4fbuuuOD1wRN7+fQXJCW9kLGOa1iUqdl2TjkXvMQ1Z9AQXg==
   dependencies:
     hasha "^5.2.2"
     simple-vdf3 "^1.0.4"
