@@ -10,6 +10,8 @@ import inspectBulk from './lib/routes/inspect/bulk.js'
 import filesSave from './lib/routes/files/save.js'
 import filesGet from './lib/routes/files/get.js'
 import filesGetList from './lib/routes/files/getList.js'
+import itemsGetSticker from './lib/routes/items/get-sticker.js'
+import itemsGetSkin from './lib/routes/items/get-skin.js'
 
 import config from '../config.js'
 
@@ -34,6 +36,9 @@ export default async function router(fastify: FastifyInstance) {
   index(fastify, botMaster);
   inspect(fastify, botMaster);
   inspectBulk(fastify, botMaster);
+
+  itemsGetSticker(fastify, botMaster.gameData.staticItems);
+  itemsGetSkin(fastify, botMaster.gameData.staticItems);
 
   return;
 }

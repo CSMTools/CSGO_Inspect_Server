@@ -1,7 +1,8 @@
 // These lines make "require" available
 import { createRequire } from "module";
-import GameData from "./game-data";
 const require = createRequire(import.meta.url);
+
+import type GameData from "./game-data";
 
 const { AcidFadeCalculator, AmberFadeCalculator, FadeCalculator } = require('csgo-fade-percentage-calculator');
 
@@ -13,6 +14,14 @@ type StaticSticker = {
     image: string;
 }
 
+type StaticWeapon = {
+    weaponName: string;
+    skinName: string;
+    rarity: number;
+    rarityName: string;
+    setImage: string;
+}
+
 export default class StaticItems {
     #gameData: GameData;
 
@@ -20,7 +29,7 @@ export default class StaticItems {
         this.#gameData = gameData;
     }
 
-    getStickers(stickerId: number): StaticSticker | undefined {
+    getSticker(stickerId: number): StaticSticker | undefined {
         const sticker: StaticSticker = {
             name: "",
             description: "",
@@ -33,18 +42,18 @@ export default class StaticItems {
         const stickerKits = this.itemsGame.sticker_kits;
 
         const kit = stickerKits[stickerId];
-        
+
         if (!kit) {
             return;
         }
 
-        let name = this.csEnglish[kit.item_name.replace('#', '')];
+        let name = this.csEnglish[kit.item_name.substring(1)];
 
         if (name) {
             sticker.name = name;
         }
 
-        let description = this.csEnglish[kit.description_string.replace('#', '')];
+        let description = this.csEnglish[kit.description_string.substring(1)];
 
         if (description) {
             sticker.description = description;
@@ -60,6 +69,50 @@ export default class StaticItems {
         }
 
         return sticker;
+    }
+
+    getSkin(defIndex: number, paintIndex: number): StaticWeapon | undefined {
+        const weapon: StaticWeapon = {
+            weaponName: "",
+            skinName: "",
+            rarity: 0,
+            rarityName: "",
+            setImage: ""
+        };
+
+        const paintKits = this.itemsGame.paint_kits;
+
+        const kit = paintKits[paintIndex];
+
+        if (!kit) {
+            return;
+        }
+
+        let skinName = this.csEnglish[kit.description_tag.substring(1)];
+
+        if (skinName) {
+            weapon.skinName = skinName;
+        }
+
+        let weaponName = this.#gameData.getWeaponName(defIndex);
+
+        if (weaponName) {
+            weapon.weaponName = weaponName;
+        }
+
+        let set = this.#gameData.getSetBySkin(kit.name, weaponName)
+
+        if (set) {
+            let setImage = this.#gameData.getSetIcon(set.set.original_name.replace("#CSGO_", ""));
+
+            if (setImage) {
+                weapon.setImage = setImage;
+            }
+
+            weapon.rarity = set.rarity;
+        }
+
+        return weapon;
     }
 
     get itemsGame() {

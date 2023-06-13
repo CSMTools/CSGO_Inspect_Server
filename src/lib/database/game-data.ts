@@ -2,12 +2,13 @@ import * as https from 'https';
 
 import config from "../../../config.js";
 import UserFileManager from "../files/userFiles.js";
-import * as vdf from 'simple-vdf3';
 import { getPhaseValue, log } from '../util.js';
 import { ItemData, StickerInItem } from '../types/BotTypes.js';
-import { StickerDataFromAPI } from '../types/DataManagementTypes.js';
 import CDN from './cdn.js';
 import { isDoppler } from '../../data/items/DopplerPhases.js';
+import StaticItems from './staticItems.js';
+import hasha from 'hasha';
+import { ItemSet, SetIndex } from '../types/DataManagementTypes.js';
 
 const floatNames = [{
     range: [0, 0.07],
@@ -49,6 +50,8 @@ export default class GameData {
     #files: UserFileManager;
     #schema: any;
     cdn: CDN;
+    staticItems: StaticItems = new StaticItems(this);
+    #inverseSets: SetIndex = {};
 
     constructor(cdn: CDN) {
         this.#files = new UserFileManager(config.file_location);
@@ -56,6 +59,10 @@ export default class GameData {
         this.cdn = cdn;
 
         this.#loadFiles();
+
+        this.cdn.on('ready', () => {
+            this.#inverseSets = this.indexSetRarities();
+        });
 
         setInterval(() => {
             this.#reloadFiles();
@@ -82,6 +89,8 @@ export default class GameData {
 
             this.#schema = JSON.parse(file)['result'];
         })
+
+        this.#inverseSets = this.indexSetRarities();
     }
 
     /*
@@ -123,12 +132,12 @@ export default class GameData {
         let skin_name = this.getSkinName(item);
 
         // Get the weapon name
-        let weapon_name: string = this.getWeaponName(item);
+        let weapon_name: string = this.getWeaponName(item.defindex);
 
         // Get the paint data and code name
         let code_name = this.getCodeName(item);
         let paint_data = this.getPaintData(item);
-        
+
         // Get the min and max floats
         [item.additional.floatData.min, item.additional.floatData.max] = this.getFloatLimits(paint_data);
 
@@ -293,9 +302,9 @@ export default class GameData {
         }
     }
 
-    getWeaponName(item: ItemData): string {
-        if (item.defindex in this.#items_game['items']) {
-            return this.#items_game['items'][item.defindex]['name'];
+    getWeaponName(defIndex: number): string {
+        if (defIndex in this.#items_game['items']) {
+            return this.#items_game['items'][defIndex]['name'];
         }
 
         return '';
@@ -330,7 +339,7 @@ export default class GameData {
         }
     }
 
-    getQualityName(item: ItemData): string  {
+    getQualityName(item: ItemData): string {
         // Get the quality name (Souvenir, Stattrak, etc...)
         const qualityKey = Object.keys(this.#items_game['qualities']).find((key) => {
             return parseInt(this.#items_game['qualities'][key]['value']) === item.quality;
@@ -410,6 +419,107 @@ export default class GameData {
         graffiti.image = image;
 
         return graffiti;
+    }
+
+    getSet(setName: string): any {
+        return this.#items_game["item_sets"][setName];
+    }
+
+    getSetBySkin(paintKitName: string, weaponClass: string): {
+        set: ItemSet;
+        rarity: number;
+    } | void {
+        return this.#inverseSets[`[${paintKitName}]${weaponClass}`];
+    }
+
+    getSetIcon(setName: string) {
+        let path = "resource/flash/econ/set_icons/" + setName + ".png";
+        console.log(path);
+        return this.cdn.getPathURL(path);
+    }
+
+    indexSetRarities() {
+        const skins: SetIndex = {};
+
+        const allItemValues: any[] = Object.values(this.#items_game["items"]);
+
+        let rarities = Object.keys(this.#items_game['rarities']);
+
+        // Generates regex like /((set|crate)_[^_]+(_\d+)?)_(default|common|uncommon|rare|mythical|legendary|ancient|immortal|unusual)/
+        const regex = new RegExp(`((set|crate)_[^_]+(_[^_]+)?)_(${rarities.join("|")})`);
+
+        // Some sets like crate_valve_1 aren't properly documented, so extra data gathering is required.
+        const setItemsWhichDontHaveData: { [set: string]: ItemSet } = {}
+
+        for (const lootList in this.#items_game['client_loot_lists']) {
+            // God why did you have to name a map and an item rarity the exact same thing???
+            if (lootList === "set_op10_ancient") {
+                continue;
+            }
+
+            const setFromList = this.#items_game['client_loot_lists'][lootList];
+            const itemsInRarityInSet = Object.keys(setFromList);
+
+            let match = lootList.match(regex);
+
+            if (!match) {
+                continue;
+            }
+
+            let rarity: number = rarities.indexOf(match[4]);
+
+            let setName = match[1];
+            if (match[2] === 'crate') {
+                setName = match[1].replace("crate", "set");
+            }
+
+            let set: ItemSet | undefined = { ...this.#items_game.item_sets[setName], original_name: setName };
+
+            // Fuck you volvo for not properly having info for all collections available, still love u tho xoxo ples gib knife
+            if (!set || !set.name) {
+                console.log(setName);
+                if (!setItemsWhichDontHaveData[match[1]]) {
+                    const itemCase = allItemValues.find((item) => {
+                        return item.name === match?.[1];
+                    });
+                    
+                    console.log(itemCase);
+
+                    setItemsWhichDontHaveData[match[1]] = {
+                        name: itemCase.item_name,
+                        set_description: "",
+                        original_name: setName,
+                        is_collection: match[2] === "set" ? "1" : "0",
+                        items: {}
+                    };
+                }
+
+                for (let item of itemsInRarityInSet) {
+                    setItemsWhichDontHaveData[match[1]].items[item] = "1";
+                }
+
+                set = setItemsWhichDontHaveData[match[1]];
+            }
+
+            console.log(setName, set)
+
+            if (set.name.startsWith("#")) {
+                set.name = this.#cs_english[set.name.substring(1)];
+            }
+
+            if (set.set_description.startsWith("#")) {
+                set.set_description = this.#cs_english[set.set_description.substring(1)] ?? "";
+            }
+
+            for (let item of itemsInRarityInSet) {
+                skins[item] = {
+                    set,
+                    rarity
+                };
+            }
+        }
+
+        return skins;
     }
 
     isGraffiti(item: ItemData): boolean {
