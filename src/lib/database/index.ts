@@ -80,6 +80,9 @@ export default class DataManager {
 
   async createOrUpdateItem(itemId: string, ownerId: string, data: ItemData): Promise<boolean> {
     try {
+      if (data.paintseed === null) {
+        return false;
+      }
       let inspectItemFields = inspectRequestToInspectFields({ ...data, time: 0 });
 
       let item = await prisma.steam_item.upsert({

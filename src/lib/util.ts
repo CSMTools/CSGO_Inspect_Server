@@ -89,26 +89,6 @@ export function shuffleArray(array: any[]) {
   return a;
 }
 
-export function isFade(paintIndex: number): boolean {
-  return [38, 522, 752, 1026].includes(paintIndex);
-}
-
-export function isAmberFade(paintIndex: number): boolean {
-  return [246, 523].includes(paintIndex);
-}
-
-export function isAcidFade(paintIndex: number): boolean {
-  return paintIndex === 253;
-}
-
-export function isBerriesAndCherries(paintIndex: number): boolean {
-  return paintIndex === 1002;
-}
-
-export function isAnyFade(paintIndex: number): boolean {
-  return isFade(paintIndex) || isAmberFade(paintIndex) || isAcidFade(paintIndex) || isBerriesAndCherries(paintIndex);
-}
-
 export function getPhaseValue(paintIndex: number): PhaseValue {
   const type = getDopplerType(paintIndex);
   let normalizedName = DopplerData[type][paintIndex].name.toLowerCase().replaceAll(" ", "");

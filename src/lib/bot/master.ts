@@ -5,7 +5,7 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 
 import Bot from './bot.js';
-import { inspectRequestToInspectFields, isAcidFade, isAmberFade, isFade, linkToInspectRequest, log, shuffleArray } from '../util.js';
+import { inspectRequestToInspectFields, linkToInspectRequest, log, shuffleArray } from '../util.js';
 
 import { BotSettings, InspectRequest, ItemData, LoginConfig } from '../types/BotTypes';
 import DataManager from '../database/index.js';
@@ -14,6 +14,7 @@ import { getItemIDFromItem } from '../database/itemId.js';
 import SteamUser from 'steam-user';
 import CDN from '../database/cdn.js';
 import GameData from '../database/game-data.js';
+import { isAcidFade, isAmberFade, isFade } from '@csmtools/fadegradients';
 
 const { AcidFadeCalculator, AmberFadeCalculator, FadeCalculator } = require('csgo-fade-percentage-calculator');
 
@@ -37,7 +38,7 @@ export default class Master extends EventEmitter {
     this.#settings = settings;
 
     if (database !== null) {
-      this.#inspectCache = new InspectCache(database);
+      this.#inspectCache = new InspectCache(database, this.gameData);
     }
 
     this.CDN.on('ready', () => {
@@ -143,6 +144,8 @@ export default class Master extends EventEmitter {
 
           this.emit('inspectResult', res);
 
+          this.#handleNextInspect();
+
           // The saving process not being awaited is intentional, as it is not neccessary to accomplish the request and can be side-lined.
           if (this.#inspectCache) {
             if (res.s !== '0') {
@@ -154,6 +157,7 @@ export default class Master extends EventEmitter {
         })
         .catch((err) => {
           this.emit('inspectResult', `${inspectData?.a} ${err as string}`);
+          this.#handleNextInspect();
         })
     } else {
       this.#inspectQueue.push(inspectData);
@@ -161,18 +165,26 @@ export default class Master extends EventEmitter {
   }
 
   inspectItem(link: string, addAdditional: boolean = false): Promise<ItemData> {
+    console.log('i')
     return new Promise(async (resolve, reject) => {
       if (!this.#botsAvailable) {
         return reject('No bots available');
       }
 
+      console.log('n')
+
       const params = linkToInspectRequest(link);
+
+      console.log('t')
 
       if (params === null) {
         return reject('Invalid link');
       }
 
+      console.log('e')
+
       this.#inspectQueue.push(params);
+      console.log(this.#inspectQueue.length);
 
       let _this = this;
 

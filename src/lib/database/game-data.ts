@@ -124,6 +124,8 @@ export default class GameData {
 
         } else if (this.isPatch(item)) {
 
+        } else if (this.isPrestigeCoin(item)) {
+
         } else {
             this.populateStickers(item);
         }
@@ -477,13 +479,10 @@ export default class GameData {
 
             // Fuck you volvo for not properly having info for all collections available, still love u tho xoxo ples gib knife
             if (!set || !set.name) {
-                console.log(setName);
                 if (!setItemsWhichDontHaveData[match[1]]) {
                     const itemCase = allItemValues.find((item) => {
                         return item.name === match?.[1];
                     });
-                    
-                    console.log(itemCase);
 
                     setItemsWhichDontHaveData[match[1]] = {
                         name: itemCase.item_name,
@@ -500,8 +499,6 @@ export default class GameData {
 
                 set = setItemsWhichDontHaveData[match[1]];
             }
-
-            console.log(setName, set)
 
             if (set.name.startsWith("#")) {
                 set.name = this.#cs_english[set.name.substring(1)];
@@ -536,6 +533,10 @@ export default class GameData {
 
     isAgent(item: ItemData): boolean {
         return this.#items_game.items[item.defindex.toString()].name.startsWith("customplayer");
+    }
+
+    isPrestigeCoin(item: ItemData): boolean {
+        return this.#items_game.items[item.defindex.toString()].name.startsWith("prestige");
     }
 
     #downloadFile(url: string, cb: ((file: string | null) => void)) {

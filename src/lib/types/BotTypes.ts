@@ -26,7 +26,7 @@ export type ItemData = {
   killeaterscoretype: number | null,
   killeatervalue: number,
   customname: string | null,
-  paintseed: number,
+  paintseed: number  | null,
   paintwear: number,
   origin: number,
   fadePercentage: number | null,

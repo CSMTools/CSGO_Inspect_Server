@@ -3,17 +3,24 @@ import DataManager from "../database/index.js";
 
 import { ItemData } from "../types/BotTypes";
 import { log } from "../util.js";
+import GameData from "../database/game-data.js";
 
 const TAG = '\x1b[33mCACHE\x1b[0m'
 
 export default class InspectCache {
     #dataManager: DataManager;
+    #gameData: GameData;
 
-    constructor(dataManager: DataManager) {
+    constructor(dataManager: DataManager, gameData: GameData) {
         this.#dataManager = dataManager;
+        this.#gameData = gameData;
     }
 
     async createOrUpdateItem(item: ItemData, ownerId: string): Promise<boolean> {
+        if (item.paintseed === null) {
+            return false;
+        }
+        
         log(TAG, `Saving item with assetId ${item.a} into database`)
 
         if ('delay' in item) {
