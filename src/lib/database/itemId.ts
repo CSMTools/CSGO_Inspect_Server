@@ -70,6 +70,7 @@ function formatPaintWear(float: number): string {
     if (float >= 1) {
         return "00000000000000000";
     }
+
     if (float <= 0) {
         return "00000000000000000";
     }
@@ -81,6 +82,18 @@ function formatPaintWear(float: number): string {
     fling = formatFloatDecimals(fling, 17);
 
     return fling;
+}
+
+function formatStickerWear(float: number): string {
+    if (float >= 1) {
+        return "100000000000000000";
+    }
+
+    if (float <= 0) {
+        return "000000000000000000";
+    }
+
+    return "0" + formatPaintWear(float);
 }
 
 function formatRotation(float: number): string {
@@ -202,8 +215,8 @@ export function serializeStickerData_V1(
     id += formatInt(stickerId, 5);
     // 2
     id += formatInt(slot, 2);
-    // 17
-    id += formatPaintWear(wear);
+    // 18
+    id += formatStickerWear(wear);
     // 18
     id += formatScale(scale);
     // 19
@@ -215,7 +228,7 @@ export function serializeStickerData_V1(
         id = shortenSerializedStickerData(id);
     }
 
-    // 64
+    // 65
     return id;
 }
 
@@ -224,11 +237,11 @@ export function deserializeStickerData_V1(data: string) {
         data = unshortenSerializedStickerData(data);
     }
 
-    if (!data.startsWith("0") || data.length !== 64) {
+    if (!data.startsWith("0") || data.length !== 65) {
         return null;
     }
 
-    let matched = data.match(/^0(\d{5,5})(\d\d)(\d{17})(\d{18})(\d{19})(\d\d)$/);
+    let matched = data.match(/^0(\d{5,5})(\d\d)(\d{18})(\d{18})(\d{19})(\d\d)$/);
 
     if (!matched) {
         return null;
@@ -247,7 +260,7 @@ export function deserializeStickerData_V1(data: string) {
 
     sticker.slot = parseInt(matched[2]);
 
-    sticker.wear = parseFloat("0." + matched[3]);
+    sticker.wear = parseFloat(matched[3].replace(/^(\d)/, "$1."));
     if (sticker.wear === 0) {
         sticker.wear = null;
     }

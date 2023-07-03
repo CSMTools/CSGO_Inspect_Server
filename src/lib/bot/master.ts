@@ -165,26 +165,18 @@ export default class Master extends EventEmitter {
   }
 
   inspectItem(link: string, addAdditional: boolean = false): Promise<ItemData> {
-    console.log('i')
     return new Promise(async (resolve, reject) => {
       if (!this.#botsAvailable) {
         return reject('No bots available');
       }
 
-      console.log('n')
-
       const params = linkToInspectRequest(link);
-
-      console.log('t')
 
       if (params === null) {
         return reject('Invalid link');
       }
 
-      console.log('e')
-
       this.#inspectQueue.push(params);
-      console.log(this.#inspectQueue.length);
 
       let _this = this;
 

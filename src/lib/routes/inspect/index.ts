@@ -8,7 +8,6 @@ interface InspectQuerystring {
     link: string,
     additional?: string
 }
-let i = 0;
 
 export default function inspect(fastify: FastifyInstance, botMaster: BotMaster) {
     if (config.enabled_modules.file_storage) {
@@ -18,10 +17,7 @@ export default function inspect(fastify: FastifyInstance, botMaster: BotMaster) 
     fastify.get<{
         Querystring: InspectQuerystring
     }>('/inspect', async function (request, reply) {
-        i++;
-        console.log("count",i);
         if (request.query.link) {
-            console.log("count",i);
             try {
                 let item: ItemData;
 
