@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import Queue from 'better-queue';
 
 // These lines make "require" available
 import { createRequire } from "module";
@@ -20,8 +20,14 @@ const { AcidFadeCalculator, AmberFadeCalculator, FadeCalculator } = require('csg
 
 const TAG = 'Master';
 
-export default class Master extends EventEmitter {
-  #inspectQueue: (InspectRequest | null)[] = [];
+export default class Master {
+  #inspectQueue: Queue = new Queue((task: InspectRequest, cb) => {
+    this.#handleInspect(task, cb)
+  }, {
+    precondition: (cb) => 
+      cb(null, !this.#allBotsBusy()),
+    preconditionRetryTimeout: 10
+  });
   #botsAvailable: number = 0;
   #settings: BotSettings;
   #logins: LoginConfig[];
@@ -32,8 +38,6 @@ export default class Master extends EventEmitter {
   gameData: GameData = new GameData(this.CDN);
 
   constructor(logins: LoginConfig[], settings: BotSettings, database: DataManager | null = null) {
-    super();
-
     this.#logins = logins;
     this.#settings = settings;
 
@@ -74,7 +78,6 @@ export default class Master extends EventEmitter {
   #bindBotEvents() {
     for (let i = 0; i < this.#bots.length; i++) {
       const bot = this.#bots[i];
-      const _this = this;
 
       bot.on('ready', () => {
         this.#botsAvailable++;
@@ -87,9 +90,9 @@ export default class Master extends EventEmitter {
 
   #logOnMaster() {
     //@ts-ignore
-    this.#steamClient.logOn({anonymous: true});
+    this.#steamClient.logOn({ anonymous: true });
 
-    this.#steamClient.on("loggedOn", (details) => {
+    this.#steamClient.on("loggedOn", (_details) => {
       log(TAG, `Logged on as anonymous`);
     })
   }
@@ -117,27 +120,20 @@ export default class Master extends EventEmitter {
     return true;
   }
 
-  async #handleNextInspect() {
-    if (!this.#inspectQueue.length || !this.#botsAvailable) {
-      return;
-    }
-
-    let inspectData = this.#inspectQueue.shift();
-
-    if (!inspectData) {
-      return;
-    }
-
+  async #handleInspect(inspectData: InspectRequest, callback: (err: any, result?: ItemData) => void) {
     if (this.#inspectCache) {
       let inspectFields = inspectRequestToInspectFields(inspectData);
       let cachedItem: ItemData | null = await this.#inspectCache.getItemByInspectFields(inspectFields);
 
       if (cachedItem !== null) {
-        return this.emit('inspectResult', cachedItem);
+        return callback(null, cachedItem);
       }
     }
 
     let bot = this.#getNonBusyBot();
+
+    // This should always equal true due to the checks the queue does before dispatching a job to this function,
+    // though this is here for typescript and just in case something fails.
     if (bot) {
       bot.sendFloatRequest(inspectData)
         .then((res) => {
@@ -152,9 +148,7 @@ export default class Master extends EventEmitter {
             res.fadePercentage = AcidFadeCalculator.getFadePercentage(weaponName, res.paintseed).percentage;
           }
 
-          this.emit('inspectResult', res);
-
-          this.#handleNextInspect();
+          callback(null, res);
 
           // The saving process not being awaited is intentional, as it is not neccessary to accomplish the request and can be side-lined.
           if (this.#inspectCache) {
@@ -164,13 +158,10 @@ export default class Master extends EventEmitter {
               this.#inspectCache.createOrUpdateItem(res, 'M' + res.m);
             }
           }
-        })
-        .catch((err) => {
-          this.emit('inspectResult', `${inspectData?.a} ${err as string}`);
-          this.#handleNextInspect();
-        })
+        }).catch(callback)
     } else {
-      this.#inspectQueue.push(inspectData);
+      console.log("This should not happen");
+      this.#inspectQueue.push(inspectData, callback);
     }
   }
 
@@ -186,22 +177,10 @@ export default class Master extends EventEmitter {
         return reject('Invalid link');
       }
 
-      this.#inspectQueue.push(params);
-
-      let _this = this;
-
-      this.on('inspectResult', function cb(res: ItemData | string) {
-        if (typeof res === 'string') {
-          if (res.startsWith(params.a)) {
-            return reject(res);
-          }
-
-          //I managed to create an amazing typo below, where I put = instead of === and that caused me multiple days of debugging fml. Just wanted to put this here to always remember.
-        } else if (res.a === params.a) {
-          _this.removeListener('inspectResult', cb);
-
+      this.#inspectQueue.push(params)
+        .once('finish', (res: ItemData) => {
           if (addAdditional) {
-            res = _this.gameData.addAdditionalItemProperties(res) || res;
+            res = this.gameData.addAdditionalItemProperties(res);
           }
 
           if (res.itemid.length !== 35) {
@@ -209,12 +188,10 @@ export default class Master extends EventEmitter {
           }
 
           resolve(res);
-        }
-      })
-
-      if (this.#getNonBusyBot()) {
-        this.#handleNextInspect();
-      }
+        })
+        .once('failed', (err: any) => {
+          return reject(err.toString());
+        });
     })
   }
 

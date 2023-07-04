@@ -39,4 +39,7 @@ model steam_item {
   last_update         BigInt
 
   @@id([id, last_inspect_fields])
+
+  @@index([id])
+  @@index([last_inspect_fields])
 }

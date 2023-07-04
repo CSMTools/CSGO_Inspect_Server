@@ -59,6 +59,7 @@ export default class Bot extends EventEmitter {
   #busy: boolean = false;
   TAG: string = "unknownBot";
   name?: string;
+  loggingIn: boolean = false;
 
   constructor(settings: BotSettings) {
     super();
@@ -80,9 +81,14 @@ export default class Bot extends EventEmitter {
   }
 
   async login(username: string, password: string, auth: string) {
+    if (this.loggingIn) {
+      return;
+    }
+    
     this.TAG = getBotTag(username);
 
     this.loggedIn = false;
+    this.loggingIn = true;
 
     this.#initialLoginData = {
       accountName: username,
@@ -90,7 +96,7 @@ export default class Bot extends EventEmitter {
       authCode: auth
     }
 
-    if (this.#steamClient) {
+    if (this.#steamClient && this.#steamClient.steamID) {
       this.#steamClient.logOff();
       await sleep(1000);
     }

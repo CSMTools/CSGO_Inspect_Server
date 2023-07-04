@@ -25,6 +25,7 @@
     "@fastify/rate-limit": "^8.0.0",
     "@prisma/client": "^4.13.0",
     "axios": "^1.3.4",
+    "better-queue": "^3.8.12",
     "cheerio": "^1.0.0-rc.12",
     "cs2-cdn": "^1.2.2",
     "csgo-fade-percentage-calculator": "^1.1.2",
@@ -39,9 +40,10 @@
     "steam-totp": "^2.1.2",
     "steam-user": "^4.28.5",
     "typescript": "^4.9.5",
-    "vpk2": "^0.1.2"
+    "vpk2": "^0.1.3"
   },
   "devDependencies": {
+    "@types/better-queue": "^3.8.3",
     "@types/globaloffensive": "^2.3.1",
     "@types/node": "^20.2.5",
     "@types/steam-totp": "^2.1.0",
