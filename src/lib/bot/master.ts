@@ -107,6 +107,16 @@ export default class Master extends EventEmitter {
     return false;
   }
 
+  #allBotsBusy(): boolean {
+    for (let bot of this.#bots) {
+      if (!bot.busy && bot.loggedIn) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   async #handleNextInspect() {
     if (!this.#inspectQueue.length || !this.#botsAvailable) {
       return;

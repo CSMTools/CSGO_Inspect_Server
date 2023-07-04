@@ -1,6 +1,6 @@
 import cdn, { PhaseValue, Phases } from "cs2-cdn";
 import { InspectRequest } from "./types/BotTypes.js";
-import { DopplerData, getDopplerType } from "../data/items/DopplerPhases.js";
+import { DopplerData, getDopplerType } from "@csmtools/dopplerutils";
 
 export function log(tag: string, message: string) {
   console.log(`log(${tag}, ${Math.floor(process.uptime())}s): ${message};`)

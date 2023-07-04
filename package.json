@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/CSMTools/CSGO_Inspect_Server#readme",
   "dependencies": {
+    "@csmtools/dopplerutils": "^1.1.0",
     "@csmtools/fadegradients": "^1.0.2",
     "@fastify/rate-limit": "^8.0.0",
     "@prisma/client": "^4.13.0",

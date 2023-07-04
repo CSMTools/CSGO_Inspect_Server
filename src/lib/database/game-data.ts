@@ -5,7 +5,7 @@ import UserFileManager from "../files/userFiles.js";
 import { getPhaseValue, log } from '../util.js';
 import { ItemData, StickerInItem } from '../types/BotTypes.js';
 import CDN from './cdn.js';
-import { isDoppler } from '../../data/items/DopplerPhases.js';
+import { isDoppler } from '@csmtools/dopplerutils';
 import StaticItems from './staticItems.js';
 import hasha from 'hasha';
 import { ItemSet, SetIndex } from '../types/DataManagementTypes.js';
