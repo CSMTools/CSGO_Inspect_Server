@@ -15,6 +15,7 @@ import SteamUser from 'steam-user';
 import CDN from '../database/cdn.js';
 import GameData from '../database/game-data.js';
 import { isAcidFade, isAmberFade, isFade } from '@csmtools/fadegradients';
+import config from '../../../config.js';
 
 const { AcidFadeCalculator, AmberFadeCalculator, FadeCalculator } = require('csgo-fade-percentage-calculator');
 
@@ -26,7 +27,8 @@ export default class Master {
   }, {
     precondition: (cb) => 
       cb(null, !this.#allBotsBusy()),
-    preconditionRetryTimeout: 10
+    preconditionRetryTimeout: 10,
+    maxRetries: config.bot_settings.max_attempts
   });
   #botsAvailable: number = 0;
   #settings: BotSettings;

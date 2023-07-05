@@ -23,7 +23,7 @@ export default function inspect(fastify: FastifyInstance, botMaster: BotMaster) 
             if (request.query.links) {
                 let links = request.query.links.split(',');
 
-                if (links.length > config.max_bulk_amount) {
+                if (links.length > (config.max_bulk_amount ?? (botMaster.botsAvailable / 2))) {
                     return reply.send({
                         error: "Max link amount exceeded."
                     });

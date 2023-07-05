@@ -51,13 +51,11 @@ export default {
     'file_location': process.cwd() + '/files',
     // Max amount of simultaneous requests from the same IP  (incl. WS and HTTP/HTTPS), -1 for unlimited
     'max_simultaneous_requests': 1,
-    // Bool to enable game file updates from the SteamDB Github tracker (updated item definitions, images, names)
-    'enable_game_file_updates': true,
     // Amount of seconds to wait between updating game files (0 = No Interval Updates)
     'game_files_update_interval': 3600,
     // OPTIONAL: Enable bulk inserts, may improve performance with many requests
     'enable_bulk_requests': false,
-    // OPTIONAL: Max amount of links that can be requested through the bulk inspect API. It is recommended to set this to double your bot count.
+    // OPTIONAL: Max amount of links that can be requested through the bulk inspect API. Defaults to half your bot count.
     'max_bulk_amount': 10,
     // OPTIONAL: Key by the caller to allow placing bulk searches
     'bulk_key': '',
