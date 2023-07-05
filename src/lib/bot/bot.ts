@@ -27,23 +27,23 @@ import GlobalOffensive, { ItemInfo } from 'globaloffensive'
 import SteamTotp from 'steam-totp'
 import { EventEmitter } from 'events'
 
-import { log, linkToInspectRequest, isInspectLinkValid, getBotTag, sleep } from "../util.js"
+import { log, getBotTag, observeProperty } from "../util.js"
 
 import login_errors from "../enum/BOT_LOGIN_ERRORS.js"
 
 import type { LoginData, ItemData, InspectRequest, BotSettings, RefreshLoginData } from "../types/BotTypes.js"
 import Session from './session.js'
 
+const steamUserConfig = {
+  enablePicsCache: true
+};
+
 export default class Bot extends EventEmitter {
   #loggedIn = false;
   #relogin = false;
-  #steamClient: SteamUser = new SteamUser({
-    enablePicsCache: true,
-    autoRelogin: false
-  });
-  #session = new Session;
-  // @ts-ignore
+  #steamClient: SteamUser = new SteamUser(steamUserConfig);
   #csgoClient: GlobalOffensive = new GlobalOffensive(this.#steamClient);
+  #session = new Session;
   #loginData: RefreshLoginData = {
     refreshToken: '',
   };
@@ -59,7 +59,6 @@ export default class Bot extends EventEmitter {
   #busy: boolean = false;
   TAG: string = "unknownBot";
   name?: string;
-  loggingIn: boolean = false;
 
   constructor(settings: BotSettings) {
     super();
@@ -81,14 +80,9 @@ export default class Bot extends EventEmitter {
   }
 
   async login(username: string, password: string, auth: string) {
-    if (this.loggingIn) {
-      return;
-    }
-    
-    this.TAG = getBotTag(username);
-
     this.loggedIn = false;
-    this.loggingIn = true;
+
+    this.TAG = getBotTag(username);
 
     this.#initialLoginData = {
       accountName: username,
@@ -98,7 +92,20 @@ export default class Bot extends EventEmitter {
 
     if (this.#steamClient && this.#steamClient.steamID) {
       this.#steamClient.logOff();
-      await sleep(1000);
+
+      // The following is a hacky way to create an await for SteamUser.logOff(), but it works well enough.
+      // Basically it looks for the steamID to change, as it changes from a string to null when logoff is successful.
+      let next: (value: unknown) => void;
+
+      observeProperty(this.#steamClient, "steamID", (a) => {
+        if (next) {
+          next(null);
+        }
+      });
+
+      await new Promise((resolve, reject) => {
+        next = resolve;
+      })
     }
 
     this.#loginData = {
@@ -124,28 +131,7 @@ export default class Bot extends EventEmitter {
     });
 
     this.#steamClient.on('disconnected', (eresult, msg) => {
-      log(this.TAG, `Logged off, reconnecting! (${eresult}, ${msg})`)
-
-      this.login(this.#initialLoginData.accountName, this.#initialLoginData.password, this.#initialLoginData.authCode);
-    });
-
-    this.#steamClient.on('steamGuard', (_, callback) => {
-      log(this.TAG, `Steam requested Steam Guard Code`);
-
-      if (!this.#initialLoginData.authCode) {
-        return log(this.TAG, `Can't find Steam Guard authentication method.`)
-      } else {
-        console.log('debug2', this.#initialLoginData.authCode)
-      }
-
-      console.time('debugtime');
-
-      let twoFactorCode = SteamTotp.getAuthCode(this.#initialLoginData.authCode);
-
-      console.timeEnd('debugtime');
-
-      console.log('debug3', twoFactorCode);
-      callback(twoFactorCode);
+      log(this.TAG, `Logged off, reconnecting! (${eresult}, ${msg})`);
     });
 
     this.#steamClient.on('loggedOn', (details, parental) => {
@@ -156,19 +142,19 @@ export default class Bot extends EventEmitter {
       this.#steamClient?.gamesPlayed([], true);
 
       if (this.#relogin) {
+        log(this.TAG, "Initiating GC Connection, Relogin");
+
         // Don't check ownership cache since the event isn't always emitted on relogin
-        log(this.TAG, "Initiating GC Connection, Relogin")
-        this.#steamClient.gamesPlayed([730], true);
-        return;
+        return this.#steamClient.gamesPlayed([730], true);
       }
 
-      // Ensure we own CSGO
+      // Ensure we own CS
       // We have to wait until app ownership is cached to safely check
       this.#steamClient.once('ownershipCached', () => {
         if (!this.#steamClient.ownsApp(730)) {
-          log(this.TAG, "Bot doesn't own CS:GO, retrieving free license")
+          log(this.TAG, "Bot doesn't own CS:GO, retrieving free license");
 
-          // Request a license for CS:GO
+          // Request a license for CS
           this.#steamClient.requestFreeLicense([730], (err, grantedPackages, grantedAppIDs) => {
             log(this.TAG, `Granted Packages ${grantedPackages.toString()}`);
             log(this.TAG, `Granted App IDs ${grantedAppIDs.toString()}`);
@@ -177,11 +163,13 @@ export default class Bot extends EventEmitter {
               log(this.TAG, 'Failed to obtain free CS:GO license');
             } else {
               log(this.TAG, 'Initiating GC Connection');
+              
               this.#steamClient.gamesPlayed([730], true);
             }
           });
         } else {
           log(this.TAG, 'Initiating GC Connection');
+
           this.#steamClient.gamesPlayed([730], true);
         }
       });
@@ -191,27 +179,6 @@ export default class Bot extends EventEmitter {
       if (this.#resolve && this.#currentRequest) {
         // Ensure the received itemid is the same as what we want
         if (itemData_.itemid !== this.#currentRequest.a) return;
-        
-        const itemData: ItemData = {
-          delay: 0,
-          itemid: itemData_.itemid,
-          defindex: itemData_.defindex,
-          paintindex: itemData_.paintindex,
-          rarity: itemData_.rarity,
-          quality: itemData_.quality,
-          killeatervalue: itemData_.killeatervalue || 0,
-          killeaterscoretype: itemData_.killeaterscoretype,
-          paintseed: itemData_.paintseed,
-          origin: itemData_.origin,
-          customname: itemData_.customname,
-          s: '',
-          a: '',
-          d: '',
-          m: '',
-          paintwear: itemData_.paintwear,
-          stickers: itemData_.stickers,
-          fadePercentage: null
-        };
 
         // Clear any TTL timeout
         if (typeof this.ttlTimeout !== 'boolean') {
@@ -227,14 +194,26 @@ export default class Bot extends EventEmitter {
         // If we're past the request delay, don't delay
         if (delay < 0) delay = 0;
 
-        itemData.delay = delay;
-        itemData.s = this.#currentRequest.s;
-        itemData.a = this.#currentRequest.a;
-        itemData.d = this.#currentRequest.d;
-        itemData.m = this.#currentRequest.m;
+        this.#resolve({
+          itemid: itemData_.itemid,
+          defindex: itemData_.defindex,
+          paintindex: itemData_.paintindex,
+          rarity: itemData_.rarity,
+          quality: itemData_.quality,
+          killeatervalue: itemData_.killeatervalue || 0,
+          killeaterscoretype: itemData_.killeaterscoretype,
+          paintseed: itemData_.paintseed,
+          origin: itemData_.origin,
+          customname: itemData_.customname,
+          s: this.#currentRequest.s,
+          a: this.#currentRequest.a,
+          d: this.#currentRequest.d,
+          m: this.#currentRequest.m,
+          paintwear: itemData_.paintwear,
+          stickers: itemData_.stickers,
+          fadePercentage: null
+        } as ItemData);
 
-        delete itemData.delay;
-        this.#resolve(itemData);
         this.#resolve = false;
         this.#currentRequest = false;
 
@@ -249,6 +228,7 @@ export default class Bot extends EventEmitter {
       log(this.TAG, 'CSGO Client Ready!');
 
       this.loggedIn = true;
+      this.busy = false;
     });
 
     this.#csgoClient.on('disconnectedFromGC', (reason) => {
@@ -268,31 +248,31 @@ export default class Bot extends EventEmitter {
     });
   }
 
-  sendFloatRequest(params: InspectRequest): Promise<ItemData> {
+  sendInspectRequest(params: InspectRequest): Promise<ItemData> {
     return new Promise((resolve, reject) => {
+      if (!this.loggedIn) {
+        return reject('The bot assigned this task is not ready.');
+      }
+
       if (this.busy || this.#currentRequest) {
-        reject("The bot assigned this task is busy.");
+        return reject("The bot assigned this task is busy.");
       }
 
       this.#resolve = resolve;
       this.busy = true;
-      this.#currentRequest = params
+      this.#currentRequest = params;
 
       log(this.TAG, `Fetching for ${this.#currentRequest.a}`);
 
-      if (!this.loggedIn) {
-        reject('This bot is not ready');
-      } else {
-        // The first param (owner) depends on the type of inspect link
-        this.#csgoClient.inspectItem(params.s !== '0' ? params.s : params.m, params.a, params.d);
-      }
+      // The first param (owner) depends on the type of inspect link
+      this.#csgoClient.inspectItem(params.s !== '0' ? params.s : params.m, params.a, params.d);
 
       // Set a timeout in case the GC takes too long to respond
       this.ttlTimeout = setTimeout(() => {
         // GC didn't respond in time, reset and reject
         this.busy = false;
         this.#currentRequest = false;
-        reject('ttl exceeded');
+        reject('Request took too long to process, please try again later, we (or Valve) may be experiencing high amounts of traffic.');
       }, this.settings.request_ttl);
     });
   }
@@ -302,7 +282,7 @@ export default class Bot extends EventEmitter {
     this.#loggedIn = val;
 
     if (val !== prev) {
-      this.emit(val ? 'ready' : 'unready');
+      this.emit('readyStatus', val);
     }
   }
 
@@ -315,7 +295,7 @@ export default class Bot extends EventEmitter {
     this.#busy = val;
 
     if (val !== prev) {
-      this.emit(val ? 'busy' : 'unbusy');
+      this.emit('busyStatus', val);
     }
   }
 

@@ -3,15 +3,13 @@ import { generateAuthCode } from 'steam-totp';
 import { getBotTag, log } from '../util.js';
 
 export default class Session {
-    TAG: string = "unknownBot";
+    TAG: string = "unknownBotSession";
 
     session?: LoginSession;
 
-    constructor() { }
-
     async getRefreshToken(accountName: string, password: string, sharedSecret: string) {
         return new Promise<string>(async (resolve, reject) => {
-            this.TAG = getBotTag(accountName) + 'S';
+            this.TAG = getBotTag(accountName) + 'Session';
 
             if (!this.session) {
                 this.session = new LoginSession(EAuthTokenPlatformType.SteamClient);

@@ -73,10 +73,6 @@ export function getBotTag(username: string): string {
   return `\x1b[${num}m${username}\x1b[0m`
 }
 
-export function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 /* Randomize array in-place using Durstenfeld shuffle algorithm */
 export function shuffleArray(array: any[]) {
   let a = [...array];
@@ -94,4 +90,26 @@ export function getPhaseValue(paintIndex: number): PhaseValue {
   let normalizedName = DopplerData[type][paintIndex].name.toLowerCase().replaceAll(" ", "");
 
   return cdn.phase[normalizedName as keyof Phases];
+}
+
+/** Intercepts writes to any property of an object */
+export function observeProperty<T extends Object, K extends keyof T>(
+  obj: T,
+  property: K,
+  onChanged: (val: T[K]) => void,
+  customDescriptor?: PropertyDescriptor | undefined
+) {
+  let val = obj[property]
+  Object.defineProperty(obj, property, {
+    get() {
+      return val
+    },
+    set(newVal) {
+      val = newVal
+      onChanged(newVal)
+    },
+    enumerable: true,
+    configurable: true,
+    ...customDescriptor
+  })
 }

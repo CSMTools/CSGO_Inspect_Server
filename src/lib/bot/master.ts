@@ -79,10 +79,11 @@ export default class Master {
     for (let i = 0; i < this.#bots.length; i++) {
       const bot = this.#bots[i];
 
-      bot.on('ready', () => {
-        this.#botsAvailable++;
-      })
-      bot.on('unready', () => {
+      bot.on('readyStatus', (ready) => {
+        if (ready) {
+          return this.#botsAvailable++;
+        }
+
         this.#botsAvailable--;
       })
     }
@@ -135,7 +136,7 @@ export default class Master {
     // This should always equal true due to the checks the queue does before dispatching a job to this function,
     // though this is here for typescript and just in case something fails.
     if (bot) {
-      bot.sendFloatRequest(inspectData)
+      bot.sendInspectRequest(inspectData)
         .then((res) => {
           // Calculate fade percentage if applicable
           const weaponName = this.gameData.getEnglishWeaponName(res, this.gameData.getWeaponData(res), this.gameData.getCodeName(res)).weapon_type;
