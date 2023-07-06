@@ -61,6 +61,7 @@ export default class GameData {
         this.#loadFiles();
 
         this.cdn.on('ready', () => {
+            console.log('ready');
             this.#inverseSets = this.indexSetRarities();
         });
 
