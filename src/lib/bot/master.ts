@@ -28,7 +28,8 @@ export default class Master {
     precondition: (cb) => 
       cb(null, !this.#allBotsBusy()),
     preconditionRetryTimeout: 10,
-    maxRetries: config.bot_settings.max_attempts
+    maxRetries: config.bot_settings.max_attempts,
+    concurrent: config.logins.length
   });
   #botsAvailable: number = 0;
   #settings: BotSettings;
