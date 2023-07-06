@@ -6,6 +6,7 @@ import router from './src/router.js'
 import config from './config.js'
 
 import Fastify from 'fastify'
+import fs from 'fs'
 
 (async () => {
   const fastify = Fastify({
@@ -14,6 +15,10 @@ import Fastify from 'fastify'
 
   if (config.rate_limit.enable) {
     await fastify.register(import('@fastify/rate-limit'), config.rate_limit);
+  }
+
+  if (!fs.existsSync('./files')) {
+    fs.mkdirSync('./files');
   }
   
   await router(fastify)

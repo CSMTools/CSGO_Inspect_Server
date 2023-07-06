@@ -31,13 +31,12 @@ export default {
     // Choose which features of the server to enable
     'enabled_modules': {
         'file_storage': true,
-        'database': true,
-        'image_manipulation': true
+        'database': true
     },
     // Optionally configure a global rate limit across all endpoints
     'rate_limit': {
         'enable': false,
-        'timeWindow': 60 * 60 * 1000, // 60 min
+        'timeWindow': 60 * 60 * 1000, // 60 minutes
         'max': 10000
     },
     // Caching for inspect API
