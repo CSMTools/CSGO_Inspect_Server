@@ -32,7 +32,6 @@
     "dotenv": "^16.0.3",
     "fastify": "^4.14.1",
     "globaloffensive": "^2.3.0",
-    "hasha": "^5.2.2",
     "http-proxy-agent": "^5.0.0",
     "prisma": "^4.13.0",
     "rand-user-agent": "^2.0.9",

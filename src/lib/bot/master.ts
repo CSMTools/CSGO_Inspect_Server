@@ -25,7 +25,7 @@ export default class Master {
   #inspectQueue: Queue = new Queue((task: InspectRequest, cb) => {
     this.#handleInspect(task, cb)
   }, {
-    precondition: (cb) => 
+    precondition: (cb) =>
       cb(null, !this.#allBotsBusy()),
     preconditionRetryTimeout: 10,
     maxRetries: config.bot_settings.max_attempts,
@@ -125,15 +125,6 @@ export default class Master {
   }
 
   async #handleInspect(inspectData: InspectRequest, callback: (err: any, result?: ItemData) => void) {
-    if (this.#inspectCache) {
-      let inspectFields = inspectRequestToInspectFields(inspectData);
-      let cachedItem: ItemData | null = await this.#inspectCache.getItemByInspectFields(inspectFields);
-
-      if (cachedItem !== null) {
-        return callback(null, cachedItem);
-      }
-    }
-
     let bot = this.#getNonBusyBot();
 
     // This should always equal true due to the checks the queue does before dispatching a job to this function,
@@ -179,6 +170,19 @@ export default class Master {
 
       if (params === null) {
         return reject('Invalid link');
+      }
+
+      if (this.#inspectCache) {
+        let inspectFields = inspectRequestToInspectFields(params);
+        let cachedItem: ItemData | null = await this.#inspectCache.getItemByInspectFields(inspectFields);
+
+        if (cachedItem !== null) {
+          if (addAdditional) {
+            cachedItem = this.gameData.addAdditionalItemProperties(cachedItem);
+          }
+          
+          return resolve(cachedItem);
+        }
       }
 
       this.#inspectQueue.push(params)

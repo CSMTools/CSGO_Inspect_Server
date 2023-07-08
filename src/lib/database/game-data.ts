@@ -7,7 +7,6 @@ import { ItemData, StickerInItem } from '../types/BotTypes.js';
 import CDN from './cdn.js';
 import { isDoppler } from '@csmtools/dopplerutils';
 import StaticItems from './staticItems.js';
-import hasha from 'hasha';
 import { ItemSet, SetIndex } from '../types/DataManagementTypes.js';
 
 const floatNames = [{
