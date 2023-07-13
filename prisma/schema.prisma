@@ -20,26 +20,63 @@ model steam_users {
 }
 
 model steam_item {
-  id                  String   @unique
-  last_inspect_fields String
-  defindex            Int
-  paintindex          Int
-  rarity              Int
-  quality             Int
-  killeaterscoretype  Int?
-  killeatervalue      Int
-  customname          String?
-  paintseed           Int
-  paintwear           Float
-  origin              Int
-  fadePercentage      Float?
-  latest_stickers     String[]
-  ownerId             String
-  ownerHistory        String[]
-  last_update         BigInt
-
-  @@id([id, last_inspect_fields])
+  id                 String   @id @unique
+  defIndex           Int
+  paintIndex         Int
+  rarity             Int
+  quality            Int
+  killeaterScoretype Int?
+  killeaterValue     Int
+  customName         String?
+  paintSeed          Int
+  paintWear          Float
+  origin             Int
+  fadePercentage     Float?
+  stickers           applied_sticker[]
+  ownerId            String
+  ownerHistory       item_history[]
+  lastUpdate         BigInt
 
   @@index([id])
-  @@index([last_inspect_fields])
+  @@index([defIndex])
+  @@index([paintIndex])
+  @@index([defIndex, paintIndex])
+}
+
+model applied_sticker {
+  stickerId Int
+  slot      Int
+  tintId    Int?
+  wear      Float?
+  scale     Float?
+  rotation  Float?
+
+  itemId    String
+  item      steam_item @relation(fields: [itemId], references: [id])
+
+  @@id([itemId, slot, stickerId])
+
+  @@index([stickerId])
+  @@index([itemId])
+}
+
+model item_history {
+  ownerId       String
+  inspectFields String
+  type          ItemOwnerType
+  createdAt     DateTime @default(now())
+
+  itemId        String
+  item          steam_item @relation(fields: [itemId], references: [id])
+
+  @@id([itemId, ownerId, createdAt])
+
+  @@index([itemId])
+  @@index([inspectFields])
+}
+
+enum ItemOwnerType {
+  USER
+  MARKET
+  UNKNOWN
 }

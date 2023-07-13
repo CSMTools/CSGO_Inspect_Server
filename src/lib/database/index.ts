@@ -1,4 +1,4 @@
-import { PrismaClient, steam_item } from '@prisma/client'
+import { ItemOwnerType, PrismaClient, applied_sticker, item_history, steam_item } from '@prisma/client'
 
 //import Scraper from './web_scraper/index.js';
 import { inspectRequestToInspectFields, linkToInspectRequest, log } from '../util.js'
@@ -61,14 +61,25 @@ export default class DataManager {
 
     let items = await prisma.steam_item.findMany({
       where: {
-        ownerId
+        ownerId: {
+          equals: ownerId
+        }
+      },
+      include: {
+        stickers: true,
+        ownerHistory: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1
+        }
       }
     })
 
     for (let i = 0; i < items.length; i++) {
       let item = items[i];
 
-      if (checkExpiry && item.last_update + config.caching.expiration_time < BigInt(Date.now())) {
+      if (checkExpiry && item.lastUpdate + config.caching.expiration_time < BigInt(Date.now())) {
         continue;
       }
 
@@ -83,7 +94,28 @@ export default class DataManager {
       if (data.paintseed === null) {
         return false;
       }
+
       let inspectItemFields = inspectRequestToInspectFields({ ...data, time: 0 });
+
+      let ownerType: ItemOwnerType = 'UNKNOWN';
+      if (ownerId.startsWith('S')) {
+        ownerType = 'USER'
+      } else {
+        ownerType = 'MARKET'
+      }
+
+      let stickers = [];
+
+      for (let sticker of data.stickers) {
+        stickers.push({
+          stickerId: sticker.sticker_id,
+          slot: sticker.slot,
+          tintId: sticker.tint_id,
+          wear: sticker.wear,
+          scale: sticker.scale,
+          rotation: sticker.rotation
+        })
+      }
 
       let item = await prisma.steam_item.upsert({
         where: {
@@ -91,39 +123,59 @@ export default class DataManager {
         },
         create: {
           id: itemId,
-          last_inspect_fields: inspectItemFields,
           ownerId,
 
-          // Data
-          defindex: data.defindex,
-          paintindex: data.paintindex,
+          defIndex: data.defindex,
+          paintIndex: data.paintindex,
           rarity: data.rarity,
           quality: data.quality,
-          killeaterscoretype: data.killeaterscoretype,
-          killeatervalue: data.killeatervalue,
-          customname: data.customname,
-          paintseed: data.paintseed,
-          paintwear: data.paintwear,
+          killeaterScoretype: data.killeaterscoretype,
+          killeaterValue: data.killeatervalue,
+          customName: data.customname,
+          paintSeed: data.paintseed,
+          paintWear: data.paintwear,
           origin: data.origin,
-          latest_stickers: this.#serializeStickers(data.stickers),
           fadePercentage: data.fadePercentage,
 
-          ownerHistory: [ownerId],
-          last_update: Date.now()
+          stickers: {
+            createMany: {
+              data: stickers
+            }
+          },
+          ownerHistory: {
+            create: {
+              ownerId: ownerId,
+              inspectFields: inspectItemFields,
+              type: ownerType
+            }
+          },
+
+          lastUpdate: Date.now()
         },
         update: {
-          last_inspect_fields: inspectItemFields,
           ownerId,
 
-          // Data
-          killeatervalue: data.killeatervalue,
-          customname: data.customname,
-          latest_stickers: this.#serializeStickers(data.stickers),
+          killeaterValue: data.killeatervalue,
+          customName: data.customname,
+          stickers: {
+            deleteMany: {},
+            createMany: {
+              data: stickers
+            }
+          },
 
           ownerHistory: {
-            push: ownerId
+            create: {
+              ownerId: ownerId,
+              inspectFields: inspectItemFields,
+              type: ownerType
+            }
           },
-          last_update: Date.now()
+          lastUpdate: Date.now()
+        },
+        include: {
+          ownerHistory: true,
+          stickers: true
         }
       })
 
@@ -143,10 +195,19 @@ export default class DataManager {
       let item = await prisma.steam_item.findFirstOrThrow({
         where: {
           id: itemId
+        },
+        include: {
+          stickers: true,
+          ownerHistory: {
+            orderBy: {
+              createdAt: 'desc'
+            },
+            take: 1
+          }
         }
       })
 
-      if (checkExpiry && item.last_update + config.caching.expiration_time < BigInt(Date.now())) {
+      if (checkExpiry && item.lastUpdate + config.caching.expiration_time < BigInt(Date.now())) {
         return null;
       }
 
@@ -158,17 +219,29 @@ export default class DataManager {
 
   async getItemByInspectFields(inspectFields: string, checkExpiry: boolean): Promise<ItemData | null> {
     try {
-      let item = await prisma.steam_item.findFirstOrThrow({
+      const { item, ...history } = await prisma.item_history.findFirstOrThrow({
         where: {
-          last_inspect_fields: inspectFields
+          inspectFields: inspectFields
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: 1,
+
+        include: {
+          item: {
+            include: {
+              stickers: true
+            }
+          }
         }
       })
 
-      if (checkExpiry && item.last_update + config.caching.expiration_time < BigInt(Date.now())) {
+      if (checkExpiry && item.lastUpdate + config.caching.expiration_time < BigInt(Date.now())) {
         return null;
       }
 
-      return this.#steam_itemToItemData(item);
+      return this.#steam_itemToItemData({...item, ownerHistory: [history]});
     } catch (e) {
       return null;
     }
@@ -278,27 +351,39 @@ export default class DataManager {
     return serializedStickers;
   }
 
-  #steam_itemToItemData(item: steam_item): ItemData {
-    let ir = linkToInspectRequest('steam://rungame/730/0/+csgo_econ_action_preview ' + item.last_inspect_fields);
+  #steam_itemToItemData(item: {
+    stickers: applied_sticker[],
+    ownerHistory: item_history[]
+  } & steam_item): ItemData {
+    let ir = linkToInspectRequest('steam://rungame/730/0/+csgo_econ_action_preview ' + item.ownerHistory[0].inspectFields);
 
     return {
       itemid: item.id,
-      defindex: item.defindex,
-      paintindex: item.paintindex,
+      defindex: item.defIndex,
+      paintindex: item.paintIndex,
       rarity: item.rarity,
       quality: item.quality,
-      killeaterscoretype: item.killeaterscoretype,
-      killeatervalue: item.killeatervalue,
-      customname: item.customname,
-      paintseed: item.paintseed,
-      paintwear: item.paintwear,
+      killeaterscoretype: item.killeaterScoretype,
+      killeatervalue: item.killeaterValue,
+      customname: item.customName,
+      paintseed: item.paintSeed,
+      paintwear: item.paintWear,
       origin: item.origin,
       fadePercentage: item.fadePercentage,
       s: ir?.s ?? '',
       a: ir?.a ?? '',
       d: ir?.d ?? '',
       m: ir?.m ?? '',
-      stickers: this.#deserializeStickers(item.latest_stickers)
+      stickers: item.stickers.map(sticker => {
+        return {
+          sticker_id: sticker.stickerId,
+          slot: sticker.slot,
+          tint_id: sticker.tintId,
+          wear: sticker.wear,
+          scale: sticker.scale,
+          rotation: sticker.rotation
+        }
+      })
     };
   }
 
@@ -308,29 +393,36 @@ export default class DataManager {
    * @returns {void}
    */
   async #cleanItemHistory(itemId: string) {
-    let history = (await prisma.steam_item.findUnique({
+    let history = await prisma.item_history.findMany({
       where: {
-        id: itemId
+        itemId
       },
       select: {
-        ownerHistory: true
-      }
-    }))?.ownerHistory
+        inspectFields: true,
+        itemId: true,
+        ownerId: true,
+        createdAt: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 2
+    })
 
     if (!history) {
       return;
     }
 
-    if (history[0] === history[1]) {
-      history.shift();
-
+    if (history[0].inspectFields === history[1].inspectFields) {
+      const wrongHistory = history[0];
       try {
-        await prisma.steam_item.update({
+        await prisma.item_history.delete({
           where: {
-            id: itemId
-          },
-          data: {
-            ownerHistory: history
+            itemId_ownerId_createdAt: {
+              itemId: wrongHistory.itemId,
+              ownerId: wrongHistory.ownerId,
+              createdAt: wrongHistory.createdAt
+            }
           }
         })
 
