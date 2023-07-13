@@ -31,8 +31,9 @@ import { log, getBotTag, observeProperty } from "../util.js"
 
 import login_errors from "../enum/BOT_LOGIN_ERRORS.js"
 
-import type { LoginData, ItemData, InspectRequest, BotSettings, RefreshLoginData } from "../types/BotTypes.js"
+import type { LoginData, InspectRequest, BotSettings, RefreshLoginData } from "../types/BotTypes.js"
 import Session from './session.js'
+import { ItemData } from '@csmtools/types'
 
 const steamUserConfig = {
   enablePicsCache: true

@@ -1,12 +1,9 @@
 import { ItemOwnerType, PrismaClient, applied_sticker, item_history, steam_item } from '@prisma/client'
 
-//import Scraper from './web_scraper/index.js';
 import { inspectRequestToInspectFields, linkToInspectRequest, log } from '../util.js'
 
-import { SteamFriend } from '../types/DataManagementTypes.js';
-import { ItemData, StickerInItem } from '../types/BotTypes.js';
-import { deserializeStickerData_V1, serializeStickerData_V1 } from './itemId.js';
 import config from '../../../config.js';
+import { ItemData } from '@csmtools/types';
 
 const prisma = new PrismaClient()
 
@@ -247,109 +244,83 @@ export default class DataManager {
     }
   }
 
-  async collect100UsersFriends() {
-    log(TAG, "Collecting friends of up to 100 users")
-    let users = await prisma.steam_users.findMany({
-      where: {
-        checked_friends: {
-          equals: false
-        }
-      },
-      take: 100
-    })
-    log(TAG, `Collecting friends of ${users.length} users`)
-    if (!users) {
-      log(TAG, "No friends to collect")
-      return;
-    }
+  // async collect100UsersFriends() {
+  //   log(TAG, "Collecting friends of up to 100 users")
+  //   let users = await prisma.steam_users.findMany({
+  //     where: {
+  //       checked_friends: {
+  //         equals: false
+  //       }
+  //     },
+  //     take: 100
+  //   })
+  //   log(TAG, `Collecting friends of ${users.length} users`)
+  //   if (!users) {
+  //     log(TAG, "No friends to collect")
+  //     return;
+  //   }
 
-    for (const user of users) {
-      let friends: {
-        steam_id: string;
-        avatar_hash: string;
-        last_update: number;
-      }[] = [];
+  //   for (const user of users) {
+  //     let friends: {
+  //       steam_id: string;
+  //       avatar_hash: string;
+  //       last_update: number;
+  //     }[] = [];
 
-      (await this.collectFriendsOfUser(user.steam_id)).forEach((friend) => {
-        friends.push({
-          steam_id: friend.steamId,
-          avatar_hash: friend.avatar_hash,
-          last_update: Date.now(),
-        });
-      });
+  //     (await this.collectFriendsOfUser(user.steam_id)).forEach((friend) => {
+  //       friends.push({
+  //         steam_id: friend.steamId,
+  //         avatar_hash: friend.avatar_hash,
+  //         last_update: Date.now(),
+  //       });
+  //     });
 
-      if (!friends.length) {
-        await prisma.steam_users.update({
-          where: {
-            steam_id: user.steam_id
-          },
-          data: {
-            checked_friends: true
-          }
-        })
-        continue;
-      }
+  //     if (!friends.length) {
+  //       await prisma.steam_users.update({
+  //         where: {
+  //           steam_id: user.steam_id
+  //         },
+  //         data: {
+  //           checked_friends: true
+  //         }
+  //       })
+  //       continue;
+  //     }
 
-      try {
-        await prisma.steam_users.createMany({
-          data: friends,
-          skipDuplicates: true
-        })
+  //     try {
+  //       await prisma.steam_users.createMany({
+  //         data: friends,
+  //         skipDuplicates: true
+  //       })
 
-        await prisma.steam_users.update({
-          where: {
-            steam_id: user.steam_id
-          },
-          data: {
-            checked_friends: true
-          }
-        })
-        log(TAG, user.steam_id)
-      } catch (err) {
-        console.error(err);
-      }
-    }
+  //       await prisma.steam_users.update({
+  //         where: {
+  //           steam_id: user.steam_id
+  //         },
+  //         data: {
+  //           checked_friends: true
+  //         }
+  //       })
+  //       log(TAG, user.steam_id)
+  //     } catch (err) {
+  //       console.error(err);
+  //     }
+  //   }
 
-    log(TAG, 'Finished collecting friends')
-  }
+  //   log(TAG, 'Finished collecting friends')
+  // }
 
-  async collectFriendsOfUser(steamId: string): Promise<SteamFriend[]> {
-    return new Promise<SteamFriend[]>(async (resolve, reject) => {
-      try {
-        /*let friends = await this.#scraper.getFriends(steamId);
+  // async collectFriendsOfUser(steamId: string): Promise<SteamFriend[]> {
+  //   return new Promise<SteamFriend[]>(async (resolve, reject) => {
+  //     try {
+  //       /*let friends = await this.#scraper.getFriends(steamId);
 
-        resolve(friends);*/
-      } catch (e) {
-        resolve([]);
-      }
-    })
-  }
-
-  #serializeStickers(stickers: StickerInItem[]): string[] {
-    let serializedStickers: string[] = [];
-
-    for (let sticker of stickers) {
-      let s = serializeStickerData_V1(sticker.sticker_id, sticker.slot, sticker.wear, sticker.scale, sticker.rotation, sticker.tint_id);
-
-      serializedStickers.push(s)
-    }
-
-    return serializedStickers;
-  }
-
-  #deserializeStickers(stickers: string[]): StickerInItem[] {
-    let serializedStickers: StickerInItem[] = [];
-
-    for (let sticker of stickers) {
-      let s = deserializeStickerData_V1(sticker);
-
-      if (s !== null) {
-        serializedStickers.push(s);
-      }
-    }
-
-    return serializedStickers;
-  }
+  //       resolve(friends);*/
+  //     } catch (e) {
+  //       resolve([]);
+  //     }
+  //   })
+  // }
 
   #steam_itemToItemData(item: {
     stickers: applied_sticker[],

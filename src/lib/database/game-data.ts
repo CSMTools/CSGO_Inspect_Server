@@ -3,11 +3,10 @@ import * as https from 'https';
 import config from "../../../config.js";
 import UserFileManager from "../files/userFiles.js";
 import { getPhaseValue, log } from '../util.js';
-import { ItemData, StickerInItem } from '../types/BotTypes.js';
 import CDN from './cdn.js';
 import { isDoppler } from '@csmtools/dopplerutils';
 import StaticItems from './staticItems.js';
-import { ItemSet, SetIndex } from '../types/DataManagementTypes.js';
+import { ItemData, ItemSet, SetIndex, Sticker } from '@csmtools/types';
 
 const floatNames = [{
     range: [0, 0.07],
@@ -362,7 +361,7 @@ export default class GameData {
         }
     }
 
-    addAdditionalStickerData(sticker: StickerInItem, item: ItemData): StickerInItem {
+    addAdditionalStickerData(sticker: Sticker, item: ItemData): Sticker {
         // Get sticker codename/name
         const stickerKits = this.#items_game.sticker_kits;
 
@@ -388,7 +387,7 @@ export default class GameData {
         return sticker;
     }
 
-    addAdditionalGraffitiStickerData(graffiti: StickerInItem) {
+    addAdditionalGraffitiStickerData(graffiti: Sticker) {
         // Get graffiti codename/name
         const stickerKits = this.#items_game.sticker_kits;
 

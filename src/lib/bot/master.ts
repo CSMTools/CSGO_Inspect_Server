@@ -7,7 +7,7 @@ const require = createRequire(import.meta.url);
 import Bot from './bot.js';
 import { inspectRequestToInspectFields, linkToInspectRequest, log, shuffleArray } from '../util.js';
 
-import { BotSettings, InspectRequest, ItemData, LoginConfig } from '../types/BotTypes';
+import { BotSettings, InspectRequest, LoginConfig } from '../types/BotTypes';
 import DataManager from '../database/index.js';
 import InspectCache from './cache.js';
 import { getItemIDFromItem } from '../database/itemId.js';
@@ -16,6 +16,7 @@ import CDN from '../database/cdn.js';
 import GameData from '../database/game-data.js';
 import { isAcidFade, isAmberFade, isFade } from '@csmtools/fadegradients';
 import config from '../../../config.js';
+import { ItemData } from '@csmtools/types';
 
 const { AcidFadeCalculator, AmberFadeCalculator, FadeCalculator } = require('csgo-fade-percentage-calculator');
 

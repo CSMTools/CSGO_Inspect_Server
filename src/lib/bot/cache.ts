@@ -1,9 +1,9 @@
 import { getItemIDFromItem } from "../database/itemId.js";
 import DataManager from "../database/index.js";
 
-import { ItemData } from "../types/BotTypes";
 import { log } from "../util.js";
 import GameData from "../database/game-data.js";
+import { ItemData } from "@csmtools/types";
 
 const TAG = '\x1b[33mCACHE\x1b[0m'
 

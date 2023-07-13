@@ -1,6 +1,5 @@
+import { ItemData, Sticker } from "@csmtools/types";
 import config from "../../../config.js";
-import { ItemData, StickerInItem } from "../types/BotTypes";
-
 
 /**
  * V1 of the item IDs
@@ -247,7 +246,7 @@ export function deserializeStickerData_V1(data: string) {
         return null;
     }
 
-    const sticker: StickerInItem = {
+    const sticker: Sticker = {
         sticker_id: 0,
         slot: 0,
         wear: null,

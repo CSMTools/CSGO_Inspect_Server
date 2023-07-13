@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify"
 
 import BotMaster from '../../bot/master.js'
 import config from "../../../../config.js"
-import { ItemData } from "../../types/BotTypes.js"
+import { ItemData } from "@csmtools/types"
 
 interface BulkInspectQuerystring {
     links: string,
