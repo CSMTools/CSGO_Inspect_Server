@@ -1,6 +1,6 @@
 {
   "name": "csgo_inspect_api",
-  "version": "0.2.0-beta",
+  "version": "0.3.0-beta",
   "description": "Express API in Node.js that allows you to inspect skins and other items.",
   "main": "build/index.js",
   "type": "module",
@@ -22,7 +22,7 @@
   "dependencies": {
     "@csmtools/dopplerutils": "^1.1.0",
     "@csmtools/fadegradients": "^1.0.2",
-    "@csmtools/types": "^1.2.1",
+    "@csmtools/types": "^1.4.0",
     "@fastify/rate-limit": "^8.0.0",
     "@prisma/client": "^5.0.0",
     "axios": "^1.3.4",

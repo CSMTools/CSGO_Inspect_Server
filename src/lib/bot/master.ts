@@ -10,10 +10,10 @@ import { inspectRequestToInspectFields, linkToInspectRequest, log, shuffleArray 
 import { BotSettings, InspectRequest, LoginConfig } from '../types/BotTypes';
 import DataManager from '../database/index.js';
 import InspectCache from './cache.js';
-import { getItemIDFromItem } from '../database/itemId.js';
+import { getItemIDFromItem } from '../database/items/itemId.js';
 import SteamUser from 'steam-user';
 import CDN from '../database/cdn.js';
-import GameData from '../database/game-data.js';
+import GameData from '../database/items/game-data.js';
 import { isAcidFade, isAmberFade, isFade } from '@csmtools/fadegradients';
 import config from '../../../config.js';
 import { ItemData } from '@csmtools/types';

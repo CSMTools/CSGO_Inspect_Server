@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify"
 
 import UserFileManager from '../../files/userFiles.js'
+import { SaveFileResponse } from "@csmtools/types";
 
 interface SaveBody {
     userId: string;
@@ -11,21 +12,22 @@ interface SaveBody {
 
 export default function save(fastify: FastifyInstance, fileManager: UserFileManager) {
     fastify.post<{
-        Body: SaveBody
+        Body: SaveBody,
+        Reply: SaveFileResponse
     }>('/files/save', async function (request, reply) {
         const { userId, type, fileId, contents } = request.body;
 
         if (!userId || !type || !contents) {
             return reply.status(400).send({
-                code: 400,
-                message: 'Missing parameter(s).'
+                data: null,
+                errors: ['Missing parameter(s).']
             })
         }
 
         if (userId === 'localsystem') {
             return reply.status(400).send({
-                code: 400,
-                message: 'Invalid userId: localsystem'
+                data: null,
+                errors: ['Invalid userId: localsystem']
             })
         }
 
@@ -33,13 +35,15 @@ export default function save(fastify: FastifyInstance, fileManager: UserFileMana
             const fileId_ = await fileManager.saveFile(userId, type, (fileId ? fileId : null), contents);
 
             reply.status(200).send({
-              fileId: fileId_
+                data: {
+                    fileId: fileId_
+                },
+                errors: []
             })
         } catch (err) {
-            console.log(err);
             reply.status(500).send({
-                code: 500,
-                message: err
+                data: null,
+                errors: [(err as string).toString()]
             })
         }
     })

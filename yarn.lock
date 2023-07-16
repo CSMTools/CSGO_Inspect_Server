@@ -29,10 +29,10 @@
   resolved "https://registry.yarnpkg.com/@csmtools/fadegradients/-/fadegradients-1.0.2.tgz#3b034bb32050f178aa11dbf43c0aadb2a41a76d2"
   integrity sha512-JkV2w3w+mqlj5E7cOzJyynBrjTBTI4XTsyVxlFvk4gdRaL6fk7Bf0Y+UC+NgHmfwaRaRtjNfvqKAzKTAUZMORw==
 
-"@csmtools/types@^1.2.1":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/@csmtools/types/-/types-1.2.1.tgz#949785ca5909f80ff1b984acde2d49a8a1f3dcfd"
-  integrity sha512-8d3OOYW3dXV7sWA16h5xmAOc6hAtbdxbf3w2Bm4QEjhX72d3m+27zLPEydKLPUtYNqB3KEACXdBGaJA0pq605w==
+"@csmtools/types@^1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@csmtools/types/-/types-1.4.0.tgz#0b2578900f000f072258120f39421ef4394f77ea"
+  integrity sha512-NsjoCgkxTvUpE9fp+DYZ30kOqBRrYT79ImzuY+Z5dmUQvvlVvapPdVT67duduK0riXTbQTJCziNVQJvopyPeoQ==
 
 "@dabh/diagnostics@^2.0.2":
   version "2.0.3"

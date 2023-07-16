@@ -1,34 +1,31 @@
 import { ItemData, Sticker } from "@csmtools/types";
-import config from "../../../config.js";
+import config from "../../../../config.js";
 
 /**
  * V1 of the item IDs
- * @param {number | null} killeaterscoretype
+ * @param {number | null} killeaterScoretype
  * @param {number} defIndex
  * @param {number} paintIndex
  * @param {number} paintSeed
- * @param {number} rarity
- * @param {number} quality
+ * @param {number} origin
  * @param {number} paintWear
- * @returns {string} 35-character ID
+ * @returns {string} 33-character ID
  */
 export function createItemID_V1(
-    killeaterscoretype: number | null,
+    killeaterScoretype: number | null,
     defIndex: number,
     paintIndex: number,
     paintSeed: number,
-    rarity: number,
-    quality: number,
+    origin: number,
     paintWear: number
 ): string {
     let id = "0";
 
-    id += formatKillEaterType(killeaterscoretype);
+    id += formatKillEaterType(killeaterScoretype);
     id += formatInt(defIndex, 4);
     id += formatInt(paintIndex, 4);
     id += formatInt(paintSeed, 4);
-    id += formatInt(rarity, 2);
-    id += formatInt(quality, 2);
+    id += formatInt(origin, 2);
     id += formatPaintWear(paintWear);
 
     return id;
@@ -40,14 +37,13 @@ export function getItemIDFromItem(item: ItemData) {
         item.defindex,
         item.paintindex,
         item.paintseed ?? 0,
-        item.rarity,
-        item.quality,
+        item.origin,
         item.paintwear
     );
 }
 
 export function validateItemId(id: string): boolean {
-    if (id.length !== 32) {
+    if (id.length !== 33) {
         return false;
     }
     if (id.match(/[^0-9]/)) {

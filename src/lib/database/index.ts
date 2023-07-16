@@ -10,49 +10,6 @@ const prisma = new PrismaClient()
 const TAG = '\x1b[31mDATABASE\x1b[0m'
 
 export default class DataManager {
-  requestsToday: number = 0;
-  #steamApiKey: string;
-  //#scraper: Scraper;
-
-  constructor(steamApiKey: string) {
-    this.#steamApiKey = steamApiKey;
-
-    //this.#scraper = new Scraper();
-
-    this.#init();
-  }
-
-  #init() {
-    prisma.steam_users.findFirst().then(async (user) => {
-      if (!user) {
-        log(TAG, 'Creating first user')
-        try {
-          await prisma.steam_users.create({
-            data: {
-              steam_id: '76561197960266237',
-              avatar_hash: 'a627d3c0e9fe310d6ce9538c3594376522acbb00',
-              last_update: Date.now(),
-              checked_friends: false
-            }
-          })
-          log(TAG, 'Created first user')
-        } catch (e) {
-          console.log(e)
-        }
-      }
-
-      /*this.collect100UsersFriends();
-
-      setInterval(() => {
-        this.collect100UsersFriends();
-      }, 600000)*/
-    })
-  }
-
-  collectInventory(steamId: string) {
-
-  }
-
   async getItemsByOwner(ownerId: string, checkExpiry: boolean) {
     let parsedItems: ItemData[] = [];
 
@@ -171,13 +128,24 @@ export default class DataManager {
           lastUpdate: Date.now()
         },
         include: {
-          ownerHistory: true,
+          ownerHistory: {
+            select: {
+              inspectFields: true,
+              itemId: true,
+              ownerId: true,
+              createdAt: true
+            },
+            orderBy: {
+              createdAt: 'desc'
+            },
+            take: 2
+          },
           stickers: true
         }
       })
 
       if (item.ownerHistory.length > 1) {
-        this.#cleanItemHistory(itemId);
+        this.#cleanItemHistory(item.ownerHistory);
       }
 
       return true;
@@ -224,7 +192,6 @@ export default class DataManager {
           createdAt: 'desc'
         },
         take: 1,
-
         include: {
           item: {
             include: {
@@ -243,84 +210,6 @@ export default class DataManager {
       return null;
     }
   }
-
-  // async collect100UsersFriends() {
-  //   log(TAG, "Collecting friends of up to 100 users")
-  //   let users = await prisma.steam_users.findMany({
-  //     where: {
-  //       checked_friends: {
-  //         equals: false
-  //       }
-  //     },
-  //     take: 100
-  //   })
-  //   log(TAG, `Collecting friends of ${users.length} users`)
-  //   if (!users) {
-  //     log(TAG, "No friends to collect")
-  //     return;
-  //   }
-
-  //   for (const user of users) {
-  //     let friends: {
-  //       steam_id: string;
-  //       avatar_hash: string;
-  //       last_update: number;
-  //     }[] = [];
-
-  //     (await this.collectFriendsOfUser(user.steam_id)).forEach((friend) => {
-  //       friends.push({
-  //         steam_id: friend.steamId,
-  //         avatar_hash: friend.avatar_hash,
-  //         last_update: Date.now(),
-  //       });
-  //     });
-
-  //     if (!friends.length) {
-  //       await prisma.steam_users.update({
-  //         where: {
-  //           steam_id: user.steam_id
-  //         },
-  //         data: {
-  //           checked_friends: true
-  //         }
-  //       })
-  //       continue;
-  //     }
-
-  //     try {
-  //       await prisma.steam_users.createMany({
-  //         data: friends,
-  //         skipDuplicates: true
-  //       })
-
-  //       await prisma.steam_users.update({
-  //         where: {
-  //           steam_id: user.steam_id
-  //         },
-  //         data: {
-  //           checked_friends: true
-  //         }
-  //       })
-  //       log(TAG, user.steam_id)
-  //     } catch (err) {
-  //       console.error(err);
-  //     }
-  //   }
-
-  //   log(TAG, 'Finished collecting friends')
-  // }
-
-  // async collectFriendsOfUser(steamId: string): Promise<SteamFriend[]> {
-  //   return new Promise<SteamFriend[]>(async (resolve, reject) => {
-  //     try {
-  //       /*let friends = await this.#scraper.getFriends(steamId);
-
-  //       resolve(friends);*/
-  //     } catch (e) {
-  //       resolve([]);
-  //     }
-  //   })
-  // }
 
   #steam_itemToItemData(item: {
     stickers: applied_sticker[],
@@ -360,27 +249,11 @@ export default class DataManager {
 
   /**
    * Run this after updating an item, and don't wait for it to finish.
-   * @param {string} itemId ID of item
+   * @param {item_history[]} history
    * @returns {void}
    */
-  async #cleanItemHistory(itemId: string) {
-    let history = await prisma.item_history.findMany({
-      where: {
-        itemId
-      },
-      select: {
-        inspectFields: true,
-        itemId: true,
-        ownerId: true,
-        createdAt: true
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: 2
-    })
-
-    if (!history) {
+  async #cleanItemHistory(history: { inspectFields: string; itemId: string; ownerId: string; createdAt: Date; }[]) {
+    if (!history || history.length !== 2) {
       return;
     }
 
@@ -397,9 +270,9 @@ export default class DataManager {
           }
         })
 
-        log(TAG, `Cleaned history of ${itemId}`);
+        log(TAG, `Cleaned history of ${history[0].itemId}`);
       } catch(e) {
-        return log(TAG, 'Failed to clean history of ' + itemId);
+        return log(TAG, 'Failed to clean history of ' + history[0].itemId);
       }
     }
 

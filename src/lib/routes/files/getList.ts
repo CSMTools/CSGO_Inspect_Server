@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify"
 
 import UserFileManager from '../../files/userFiles.js'
+import { GetFileListResponse } from "@csmtools/types";
 
 interface GetQuerystring {
     userId: string;
@@ -9,21 +10,22 @@ interface GetQuerystring {
 
 export default function get(fastify: FastifyInstance, fileManager: UserFileManager) {
     fastify.get<{
-        Querystring: GetQuerystring
+        Querystring: GetQuerystring,
+        Reply: GetFileListResponse
     }>('/files/getList', async function (request, reply) {
         const { userId, type } = request.query;
 
         if (!userId || !type) {
             return reply.status(400).send({
-                code: 400,
-                message: 'Missing parameter(s).'
+                data: null,
+                errors: ['Missing parameter(s).']
             })
         }
 
         if (userId === 'localsystem') {
             return reply.status(400).send({
-                code: 400,
-                message: 'Invalid userId: localsystem'
+                data: null,
+                errors: ['Invalid userId: localsystem']
             })
         }
 
@@ -31,12 +33,15 @@ export default function get(fastify: FastifyInstance, fileManager: UserFileManag
             const list = await fileManager.getFileList(userId, type);
 
             reply.status(200).send({
-              list
+                data: {
+                    list
+                },
+                errors: []
             })
         } catch (err) {
             reply.status(500).send({
-                code: 500,
-                message: err
+                data: null,
+                errors: [(err as string).toString()]
             })
         }
     })

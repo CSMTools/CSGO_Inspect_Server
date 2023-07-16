@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify"
-import StaticItems from "../../database/staticItems";
+import StaticItems from "../../database/items/staticItems";
+import { StaticWeaponResponse } from "@csmtools/types";
 
 interface GetQuerystring {
     defIndex: string;
@@ -8,28 +9,29 @@ interface GetQuerystring {
 
 export default function getSkin(fastify: FastifyInstance, items: StaticItems) {
     fastify.get<{
-        Querystring: GetQuerystring
+        Querystring: GetQuerystring,
+        Reply: StaticWeaponResponse
     }>('/items/get-skin', async function (request, reply) {
         const { defIndex, paintIndex } = request.query;
 
         if (!defIndex || !paintIndex) {
             return reply.status(400).send({
-                code: 400,
-                message: 'Missing parameter(s).'
+                data: null,
+                errors: ['Missing parameter(s).']
             })
         }
 
         if (defIndex.match(/\D/)) {
             return reply.status(400).send({
-                code: 400,
-                message: 'Invalid defIndex.'
+                data: null,
+                errors: ['Invalid defIndex.']
             })
         }
 
         if (paintIndex.match(/\D/)) {
             return reply.status(400).send({
-                code: 400,
-                message: 'Invalid paintIndex.'
+                data: null,
+                errors: ['Invalid paintIndex.']
             })
         }
 
@@ -38,19 +40,20 @@ export default function getSkin(fastify: FastifyInstance, items: StaticItems) {
 
             if (!weapon) {
                 return reply.status(404).send({
-                    code: 404,
-                    message: 'No skin found.'
+                    data: null,
+                    errors: ['No skin found.']
                 })
             }
 
             reply.status(200).send({
-                weapon
+                data: weapon,
+                errors: []
             })
         } catch (err) {
             console.log(err);
             reply.status(500).send({
-                code: 500,
-                message: err
+                data: null,
+                errors: [(err as string).toString()]
             })
         }
     })

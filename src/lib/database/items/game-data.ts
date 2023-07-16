@@ -1,9 +1,9 @@
 import * as https from 'https';
 
-import config from "../../../config.js";
-import UserFileManager from "../files/userFiles.js";
-import { getPhaseValue, log } from '../util.js';
-import CDN from './cdn.js';
+import config from "../../../../config.js";
+import UserFileManager from "../../files/userFiles.js";
+import { getPhaseValue, log } from '../../util.js';
+import CDN from '../cdn.js';
 import { isDoppler } from '@csmtools/dopplerutils';
 import StaticItems from './staticItems.js';
 import { ItemData, ItemSet, SetIndex, Sticker } from '@csmtools/types';
