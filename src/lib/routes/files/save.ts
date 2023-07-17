@@ -24,10 +24,10 @@ export default function save(fastify: FastifyInstance, fileManager: UserFileMana
             })
         }
 
-        if (userId === 'localsystem') {
+        if (isNaN(parseInt(userId))) {
             return reply.status(400).send({
                 data: null,
-                errors: ['Invalid userId: localsystem']
+                errors: ['Invalid userId']
             })
         }
 

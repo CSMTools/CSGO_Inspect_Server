@@ -157,7 +157,7 @@ export default class Master {
         }).catch(callback)
     } else {
       console.log("This should not happen");
-      this.#inspectQueue.push(inspectData, callback);
+      callback('Uh oh no botty wottys available');
     }
   }
 
@@ -201,29 +201,6 @@ export default class Master {
         .once('failed', (err: any) => {
           return reject(err.toString());
         });
-    })
-  }
-
-  inspectItemBulk(links: string[], addAdditional: boolean = false): Promise<ItemData[]> {
-    return new Promise(async (resolve, reject) => {
-      const promises: Promise<ItemData>[] = [];
-      const items: ItemData[] = [];
-
-      for (let link of links) {
-        promises.push(this.inspectItem(link, addAdditional));
-      }
-
-      Promise.allSettled(promises).then((results) => {
-        results.forEach((result) => {
-          if (result.status === "fulfilled") {
-            items.push(result.value);
-          } else {
-            reject(result.reason);
-          }
-        })
-
-        resolve(items);
-      })
     })
   }
 

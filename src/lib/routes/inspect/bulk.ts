@@ -10,7 +10,7 @@ interface BulkInspectQuerystring {
     additional?: string
 }
 
-export default function inspect(fastify: FastifyInstance, botMaster: BotMaster) {
+export default function inspectBulk(fastify: FastifyInstance, botMaster: BotMaster) {
     if (config.enable_bulk_requests) {
         fastify.get<{
             Querystring: BulkInspectQuerystring,
@@ -47,16 +47,36 @@ export default function inspect(fastify: FastifyInstance, botMaster: BotMaster) 
                     });
                 }
 
-                let items: ItemData[];
+                let promises: (Promise<ItemData> | string)[] = [];
 
-                if (request.query.additional && request.query.additional === 'true') {
-                    items = await botMaster.inspectItemBulk(links, true);
-                } else {
-                    items = await botMaster.inspectItemBulk(links);
+                for (let link of links) {
+                    if (!/steam:\/\/rungame\/730\/\d+\/(\+|\s)csgo_econ_action_preview(\s|%20)(S|M)\d+A\d+D\d+/.test(link)) {
+                        promises.push('Invalid link.');
+                    }
+
+                    promises.push(botMaster.inspectItem(link, request.query.additional === 'true' ? true : false));
                 }
-                
+
+                let results: (ItemData | undefined)[] = [];
+                let errors: string[] = [];
+
+                (await Promise.allSettled(promises)).forEach((result) => {
+                    let value: string | ItemData;
+                    if (result.status === "fulfilled") {
+                        value = result.value;
+                    } else {
+                        value = result.reason.toString();
+                    }
+
+                    if (typeof value === 'string') {
+                        errors.push(value);
+                    } else {
+                        results.push(value);
+                    }
+                })
+
                 reply.send({
-                    data: items,
+                    data: results,
                     errors: []
                 });
             } else {

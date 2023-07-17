@@ -52,10 +52,10 @@ export default {
     'max_simultaneous_requests': 1,
     // Amount of seconds to wait between updating game files (0 = No Interval Updates)
     'game_files_update_interval': 3600,
-    // OPTIONAL: Enable bulk inserts, may improve performance with many requests
+    // OPTIONAL: Enable bulk inspect requests
     'enable_bulk_requests': false,
     // OPTIONAL: Max amount of links that can be requested through the bulk inspect API. Defaults to half your bot count.
     'max_bulk_amount': 10,
-    // OPTIONAL: Key by the caller to allow placing bulk searches
+    // OPTIONAL: Key by the caller to allow placing bulk inspects
     'bulk_key': '',
 };

@@ -1,0 +1,8 @@
+enum FILE_ERRORS {
+    TYPE_TOO_LONG,
+    USER_ID_TOO_LONG,
+    FILE_ID_TOO_LONG,
+    FILE_TOO_BIG
+}
+
+export default FILE_ERRORS;

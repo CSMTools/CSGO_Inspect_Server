@@ -24,16 +24,14 @@ SOFTWARE.*/
 
 import SteamUser from 'steam-user'
 import GlobalOffensive, { ItemInfo } from 'globaloffensive'
-import SteamTotp from 'steam-totp'
 import { EventEmitter } from 'events'
 
 import { log, getBotTag, observeProperty } from "../util.js"
-
-import login_errors from "../enum/BOT_LOGIN_ERRORS.js"
+import Session from './session.js'
 
 import type { LoginData, InspectRequest, BotSettings, RefreshLoginData } from "../types/BotTypes.js"
-import Session from './session.js'
 import { ItemData } from '@csmtools/types'
+import { EResult } from 'steam-session'
 
 const steamUserConfig = {
   enablePicsCache: true
@@ -55,7 +53,7 @@ export default class Bot extends EventEmitter {
   }
   #resolve: ((value: ItemData) => void) | false = false;
   #currentRequest: InspectRequest | false = false;
-  ttlTimeout: NodeJS.Timeout | boolean = false;
+  ttlTimeout: NodeJS.Timeout = setTimeout(() => {}, -1);
   settings: BotSettings;
   #busy: boolean = false;
   TAG: string = "unknownBot";
@@ -126,8 +124,8 @@ export default class Bot extends EventEmitter {
     this.#steamClient.on('error', (err) => {
       log(this.TAG, `Error logging in (${err.eresult})`)
 
-      if (err.eresult && login_errors[err.eresult] !== undefined) {
-        log(this.TAG, login_errors[err.eresult])
+      if (err.eresult && EResult[err.eresult] !== undefined) {
+        log(this.TAG, EResult[err.eresult])
       }
     });
 
@@ -135,7 +133,7 @@ export default class Bot extends EventEmitter {
       log(this.TAG, `Logged off, reconnecting! (${eresult}, ${msg})`);
     });
 
-    this.#steamClient.on('loggedOn', (details, parental) => {
+    this.#steamClient.on('loggedOn', (_details, _parental) => {
       log(this.TAG, `Log on OK`)
 
       // Fixes reconnecting to CS:GO GC since node-steam-user still assumes we're playing 730
@@ -182,9 +180,8 @@ export default class Bot extends EventEmitter {
         if (itemData_.itemid !== this.#currentRequest.a) return;
 
         // Clear any TTL timeout
-        if (typeof this.ttlTimeout !== 'boolean') {
+        if ((this.ttlTimeout as unknown as {_idleTimeout: number})._idleTimeout > 0) {
           clearTimeout(this.ttlTimeout);
-          this.ttlTimeout = false;
         }
 
         // GC requires a delay between subsequent requests

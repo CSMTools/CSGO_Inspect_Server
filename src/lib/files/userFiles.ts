@@ -1,4 +1,5 @@
 import fs from 'fs';
+import FILE_ERRORS from '../enum/FILE_ERRORS.js';
 
 export default class UserFileManager {
     path: string;
@@ -25,6 +26,16 @@ export default class UserFileManager {
 
     getFile(userId: string, type: string, fileId: string): Promise<string> {
         return new Promise((resolve, reject) => {
+            if (userId.length > 64) {
+                return reject(FILE_ERRORS.USER_ID_TOO_LONG)
+            }
+            if (type.length > 256) {
+                return reject(FILE_ERRORS.TYPE_TOO_LONG)
+            }
+            if (fileId.length > 6) {
+                return reject(FILE_ERRORS.TYPE_TOO_LONG)
+            }
+
             const pathToFile = this.#constructPathToFile(userId, type, fileId);
 
             fs.readFile(pathToFile, (err, data) => {
@@ -39,6 +50,19 @@ export default class UserFileManager {
 
     saveFile(userId: string, type: string, fileId: string | null, contents: string | Buffer) {
         return new Promise<string>((resolve, reject) => {
+            if (userId.length > 64) {
+                return reject(FILE_ERRORS.USER_ID_TOO_LONG)
+            }
+            if (type.length > 256) {
+                return reject(FILE_ERRORS.TYPE_TOO_LONG)
+            }
+            if (fileId && fileId.length > 6) {
+                return reject(FILE_ERRORS.TYPE_TOO_LONG)
+            }
+            if (Buffer.from(contents).byteLength > 10000000) {
+                return reject(FILE_ERRORS.FILE_TOO_BIG)
+            }
+
             const pathToFolder = this.#constructPathToFolder(userId, type);
 
             fs.readdir(pathToFolder, (err, data) => {
@@ -74,6 +98,12 @@ export default class UserFileManager {
 
     getFileList(userId: string, type: string) {
         return new Promise<string[]>((resolve, reject) => {
+            if (userId.length > 64) {
+                return reject(FILE_ERRORS.USER_ID_TOO_LONG)
+            }
+            if (type.length > 256) {
+                return reject(FILE_ERRORS.TYPE_TOO_LONG)
+            }
             const pathToFolder = this.#constructPathToFolder(userId, type);
 
             fs.readdir(pathToFolder, (err, data) => {

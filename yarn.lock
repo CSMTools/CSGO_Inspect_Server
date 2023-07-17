@@ -29,10 +29,10 @@
   resolved "https://registry.yarnpkg.com/@csmtools/fadegradients/-/fadegradients-1.0.2.tgz#3b034bb32050f178aa11dbf43c0aadb2a41a76d2"
   integrity sha512-JkV2w3w+mqlj5E7cOzJyynBrjTBTI4XTsyVxlFvk4gdRaL6fk7Bf0Y+UC+NgHmfwaRaRtjNfvqKAzKTAUZMORw==
 
-"@csmtools/types@^1.4.0":
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/@csmtools/types/-/types-1.4.0.tgz#0b2578900f000f072258120f39421ef4394f77ea"
-  integrity sha512-NsjoCgkxTvUpE9fp+DYZ30kOqBRrYT79ImzuY+Z5dmUQvvlVvapPdVT67duduK0riXTbQTJCziNVQJvopyPeoQ==
+"@csmtools/types@^1.4.1":
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/@csmtools/types/-/types-1.4.1.tgz#1a9d0d318e26bdd4eb8f2e38590bda88f7694aa5"
+  integrity sha512-5nBJUC3J1oLKXnBsyBznR/zOhAPoq9feovSoMt5ldlvdaVUhMOTB0Ss9tgSsP9HB24jcNRkojSahvxpwBECvdw==
 
 "@dabh/diagnostics@^2.0.2":
   version "2.0.3"
@@ -538,10 +538,10 @@ crc@^3.3.0:
   dependencies:
     buffer "^5.1.0"
 
-cs2-cdn@^1.3.0:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/cs2-cdn/-/cs2-cdn-1.3.0.tgz#e6587ef5e7955b5ab3ba8aece440dfecd6f327b7"
-  integrity sha512-9Xgx2mXdGAnCgCuSWrf/0YGWVa1IOJtX8xzmx4NTy1m1l65I8p5fP3iN2N9gWfVv+u6WkSGxEWjIcVtABk8ftA==
+cs2-cdn@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/cs2-cdn/-/cs2-cdn-1.4.0.tgz#fcecacf1658efba37bdba3ac587b3b8e457dc2f8"
+  integrity sha512-8v2nIAvPXus8PfezjaUonEvOhdqF0uG6yNi3afpOAX65IWZPh8UQUhFoAlKYQjAtmbvXBEHUAE82SJnnp7oPaw==
   dependencies:
     hasha "^5.2.2"
     simple-vdf3 "^1.1.0"
