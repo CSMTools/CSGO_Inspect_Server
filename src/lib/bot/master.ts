@@ -1,8 +1,9 @@
-import Queue from 'better-queue';
-
 // These lines make "require" available
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
+
+import Queue from 'better-queue';
+import SteamUser from 'steam-user';
 
 import Bot from './bot.js';
 import { inspectRequestToInspectFields, linkToInspectRequest, log, shuffleArray } from '../util.js';
@@ -11,12 +12,11 @@ import { BotSettings, InspectRequest, LoginConfig } from '../types/BotTypes';
 import DataManager from '../database/index.js';
 import InspectCache from './cache.js';
 import { getItemIDFromItem } from '../database/items/itemId.js';
-import SteamUser from 'steam-user';
 import CDN from '../database/cdn.js';
 import GameData from '../database/items/game-data.js';
 import { isAcidFade, isAmberFade, isFade } from '@csmtools/fadegradients';
 import config from '../../../config.js';
-import { ItemData } from '@csmtools/types';
+import type { ItemData, BotsStatus } from '@csmtools/types';
 
 const { AcidFadeCalculator, AmberFadeCalculator, FadeCalculator } = require('csgo-fade-percentage-calculator');
 
@@ -27,7 +27,7 @@ export default class Master {
     this.#handleInspect(task, cb)
   }, {
     precondition: (cb) =>
-      cb(null, !this.#allBotsBusy()),
+      cb(null, this.#hasFreeBot()),
     preconditionRetryTimeout: 10,
     maxRetries: config.bot_settings.max_attempts,
     concurrent: config.logins.length
@@ -89,7 +89,7 @@ export default class Master {
         }
 
         this.#botsAvailable--;
-      })
+      });
     }
   }
 
@@ -115,14 +115,36 @@ export default class Master {
     return false;
   }
 
-  #allBotsBusy(): boolean {
+  #hasFreeBot(): boolean {
     for (let bot of this.#bots) {
       if (!bot.busy && bot.loggedIn) {
-        return false;
+        return true;
       }
     }
 
-    return true;
+    return false;
+  }
+
+  getStats(): BotsStatus {
+    let queue = this.#inspectQueue.getStats();
+    let bots: {
+      name: string,
+      available: boolean,
+      busy: boolean
+    }[] = [];
+
+    for (let bot of this.#bots) {
+      bots.push({
+        name: bot.name || '',
+        available: bot.loggedIn,
+        busy: bot.busy
+      })
+    }
+
+    return {
+      queue,
+      bots
+    }
   }
 
   async #handleInspect(inspectData: InspectRequest, callback: (err: any, result?: ItemData) => void) {

@@ -180,7 +180,7 @@ export default class Bot extends EventEmitter {
         if (itemData_.itemid !== this.#currentRequest.a) return;
 
         // Clear any TTL timeout
-        if ((this.ttlTimeout as unknown as {_idleTimeout: number})._idleTimeout > 0) {
+        if ((this.ttlTimeout as unknown as { _idleTimeout: number })._idleTimeout > 0) {
           clearTimeout(this.ttlTimeout);
         }
 
@@ -256,8 +256,9 @@ export default class Bot extends EventEmitter {
         return reject("The bot assigned this task is busy.");
       }
 
-      this.#resolve = resolve;
       this.busy = true;
+
+      this.#resolve = resolve;
       this.#currentRequest = params;
 
       log(this.TAG, `Fetching for ${this.#currentRequest.a}`);

@@ -29,10 +29,10 @@
   resolved "https://registry.yarnpkg.com/@csmtools/fadegradients/-/fadegradients-1.0.2.tgz#3b034bb32050f178aa11dbf43c0aadb2a41a76d2"
   integrity sha512-JkV2w3w+mqlj5E7cOzJyynBrjTBTI4XTsyVxlFvk4gdRaL6fk7Bf0Y+UC+NgHmfwaRaRtjNfvqKAzKTAUZMORw==
 
-"@csmtools/types@^1.4.1":
-  version "1.4.1"
-  resolved "https://registry.yarnpkg.com/@csmtools/types/-/types-1.4.1.tgz#1a9d0d318e26bdd4eb8f2e38590bda88f7694aa5"
-  integrity sha512-5nBJUC3J1oLKXnBsyBznR/zOhAPoq9feovSoMt5ldlvdaVUhMOTB0Ss9tgSsP9HB24jcNRkojSahvxpwBECvdw==
+"@csmtools/types@^1.5.2":
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/@csmtools/types/-/types-1.5.2.tgz#5be3844e29769f5d20a46772478776e6ebe39ffe"
+  integrity sha512-HpF0Lk5SExDlCMgxIgyUorvEhjm/2MpQdJ4GDtbZLi4rRMGd3UdRB5+ChT8F/0680v/C9ybormKOZcm/06X0Mw==
 
 "@dabh/diagnostics@^2.0.2":
   version "2.0.3"
@@ -1633,6 +1633,11 @@ triple-beam@^1.3.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/triple-beam/-/triple-beam-1.3.0.tgz#a595214c7298db8339eeeee083e4d10bd8cb8dd9"
   integrity sha512-XrHUvV5HpdLmIj4uVMxHggLbFSZYIn7HEWsqePZcI50pco+MPqJ50wMGY794X7AOOhxOBAjbkqfAbEe/QMp2Lw==
+
+tsc@^2.0.4:
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/tsc/-/tsc-2.0.4.tgz#5f6499146abea5dca4420b451fa4f2f9345238f5"
+  integrity sha512-fzoSieZI5KKJVBYGvwbVZs/J5za84f2lSTLPYf6AGiIf43tZ3GNrI1QzTLcjtyDDP4aLxd46RTZq1nQxe7+k5Q==
 
 tunnel-agent@^0.6.0:
   version "0.6.0"

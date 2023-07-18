@@ -5,6 +5,7 @@ import DataManager from './lib/database/index.js'
 import UserFileManager from './lib/files/userFiles.js'
 
 import index from './lib/routes/index.js'
+import status from './lib/routes/status.js'
 import inspect from './lib/routes/inspect/index.js'
 import inspectBulk from './lib/routes/inspect/bulk.js'
 import filesSave from './lib/routes/files/save.js'
@@ -33,7 +34,10 @@ export default async function router(fastify: FastifyInstance) {
     filesGetList(fastify, fileManager);
   }
 
-  index(fastify, botMaster);
+  index(fastify);
+
+  status(fastify, botMaster);
+
   inspect(fastify, botMaster);
   inspectBulk(fastify, botMaster);
 
