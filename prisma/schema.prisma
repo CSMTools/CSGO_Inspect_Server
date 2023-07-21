@@ -15,6 +15,7 @@ model steam_users {
   last_update     BigInt
   checked_friends Boolean  @default(false)
   premium         Boolean  @default(false)
+  role            UserRole @default(USER)
 
   @@index([steam_id])
 }
@@ -79,4 +80,11 @@ enum ItemOwnerType {
   USER
   MARKET
   UNKNOWN
+}
+
+enum UserRole {
+  USER
+  PARTNER
+  ADMIN
+  OWNER
 }
