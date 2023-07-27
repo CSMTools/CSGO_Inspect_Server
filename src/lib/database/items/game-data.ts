@@ -93,7 +93,7 @@ export default class GameData {
         Given returned iteminfo, finds the item's min/max float, name, weapon type, and image url using CSGO game data
     */
     addAdditionalItemProperties(item: ItemData) {
-        if (!this.#items_game || !this.#items_game_cdn || !this.#cs_english) {
+        if (!this.items_game || !this.items_game_cdn || !this.cs_english) {
             return item;
         };
 
@@ -133,15 +133,15 @@ export default class GameData {
         let weapon_name: string = this.getWeaponName(item.defindex);
 
         // Get the paint data and code name
-        let code_name = this.getCodeName(item);
-        let paint_data = this.getPaintData(item);
+        let code_name = this.getCodeName(item.paintindex);
+        let paint_data = this.getPaintData(item.paintindex);
 
         // Get the min and max floats
         [item.additional.floatData.min, item.additional.floatData.max] = this.getFloatLimits(paint_data);
 
-        let weapon_data = this.getWeaponData(item);
+        let weapon_data = this.getWeaponData(item.defindex);
 
-        let { weapon_type, item_name } = this.getEnglishWeaponName(item, weapon_data, code_name);
+        let { weapon_type, item_name } = this.getEnglishWeaponName(item.defindex, weapon_data, code_name);
 
         item.additional.weapon_type = weapon_type;
         item.additional.item_name = item_name;
@@ -190,19 +190,19 @@ export default class GameData {
         return item;
     }
 
-    getEnglishWeaponName(item: ItemData, weapon_data: any, code_name: string) {
+    getEnglishWeaponName(defIndex: number, weapon_data: any, code_name: string) {
         const result = {
             weapon_type: '',
             item_name: ''
         };
 
         // Get the weapon_hud
-        let weapon_hud: string = this.getWeaponHUD(item, weapon_data);
+        let weapon_hud: string = this.getWeaponHUD(defIndex, weapon_data);
 
         // Get the skin name if we can
-        if (weapon_hud in this.#cs_english && code_name in this.#cs_english) {
-            result.weapon_type = this.#cs_english[weapon_hud];
-            result.item_name = this.#cs_english[code_name];
+        if (weapon_hud in this.cs_english && code_name in this.cs_english) {
+            result.weapon_type = this.cs_english[weapon_hud];
+            result.item_name = this.cs_english[code_name];
         }
 
         return result;
@@ -212,7 +212,7 @@ export default class GameData {
         const f = floatNames.find((f) => float > f.range[0] && float <= f.range[1]);
 
         if (f) {
-            return this.#cs_english[f['name']];
+            return this.cs_english[f['name']];
         }
     }
 
@@ -230,7 +230,7 @@ export default class GameData {
 
         // Patch for items that are stattrak and unusual (ex. Stattrak Karambit)
         if (item.killeaterscoretype !== null && item.quality !== 9) {
-            name += `${this.#cs_english['strange']} `;
+            name += `${this.cs_english['strange']} `;
         }
 
         name += `${item.additional.weapon_type} `;
@@ -254,8 +254,8 @@ export default class GameData {
     getSkinName(item: ItemData) {
         let skin_name = '';
 
-        if (item.paintindex in this.#items_game['paint_kits']) {
-            skin_name = '_' + this.#items_game['paint_kits'][item.paintindex]['name'];
+        if (item.paintindex in this.items_game['paint_kits']) {
+            skin_name = '_' + this.items_game['paint_kits'][item.paintindex]['name'];
 
             if (skin_name == '_default') {
                 skin_name = '';
@@ -265,15 +265,15 @@ export default class GameData {
         return skin_name;
     }
 
-    getCodeName(item: ItemData) {
-        if (item.paintindex in this.#items_game['paint_kits']) {
-            return this.#items_game['paint_kits'][item.paintindex]['description_tag'].replace('#', '');
+    getCodeName(paintIndex: number) {
+        if (paintIndex in this.items_game['paint_kits']) {
+            return this.items_game['paint_kits'][paintIndex]['description_tag'].replace('#', '');
         }
     }
 
-    getPaintData(item: ItemData) {
-        if (item.paintindex in this.#items_game['paint_kits']) {
-            return this.#items_game['paint_kits'][item.paintindex];
+    getPaintData(paintIndex: number) {
+        if (paintIndex in this.items_game['paint_kits']) {
+            return this.items_game['paint_kits'][paintIndex];
         }
     }
 
@@ -294,28 +294,28 @@ export default class GameData {
         return [min, max];
     }
 
-    getWeaponData(item: ItemData) {
-        if (item.defindex in this.#items_game['items']) {
-            return this.#items_game['items'][item.defindex];
+    getWeaponData(defIndex: number) {
+        if (defIndex in this.items_game['items']) {
+            return this.items_game['items'][defIndex];
         }
     }
 
     getWeaponName(defIndex: number): string {
-        if (defIndex in this.#items_game['items']) {
-            return this.#items_game['items'][defIndex]['name'];
+        if (defIndex in this.items_game['items']) {
+            return this.items_game['items'][defIndex]['name'];
         }
 
         return '';
     }
 
-    getWeaponHUD(item: ItemData, weapon_data: any): string {
+    getWeaponHUD(defIndex: number, weapon_data: any): string {
         if (weapon_data && 'item_name' in weapon_data) {
             return weapon_data['item_name'].replace('#', '');
         } else {
             // need to find the weapon hud from the prefab
-            if (item.defindex in this.#items_game['items']) {
-                let prefab_val = this.#items_game['items'][item.defindex]['prefab'];
-                return this.#items_game['prefabs'][prefab_val]['item_name'].replace('#', '');
+            if (defIndex in this.items_game['items']) {
+                let prefab_val = this.items_game['items'][defIndex]['prefab'];
+                return this.items_game['prefabs'][prefab_val]['item_name'].replace('#', '');
             }
         }
 
@@ -324,26 +324,26 @@ export default class GameData {
 
     getRarityName(item: ItemData): string | void {
         // Get the rarity name (Mil-Spec Grade, Covert etc...)
-        const rarityKey = Object.keys(this.#items_game['rarities']).find((key) => {
-            return parseInt(this.#items_game['rarities'][key]['value']) === item.rarity;
+        const rarityKey = Object.keys(this.items_game['rarities']).find((key) => {
+            return parseInt(this.items_game['rarities'][key]['value']) === item.rarity;
         });
 
         if (rarityKey) {
-            const rarity = this.#items_game['rarities'][rarityKey];
+            const rarity = this.items_game['rarities'][rarityKey];
 
             // Assumes weapons always have a float above 0 and that other items don't
             // TODO: Improve weapon check if this isn't robust
-            return this.#cs_english[rarity[item.paintwear > 0 ? 'loc_key_weapon' : 'loc_key']];
+            return this.cs_english[rarity[item.paintwear > 0 ? 'loc_key_weapon' : 'loc_key']];
         }
     }
 
     getQualityName(item: ItemData): string {
         // Get the quality name (Souvenir, Stattrak, etc...)
-        const qualityKey = Object.keys(this.#items_game['qualities']).find((key) => {
-            return parseInt(this.#items_game['qualities'][key]['value']) === item.quality;
+        const qualityKey = Object.keys(this.items_game['qualities']).find((key) => {
+            return parseInt(this.items_game['qualities'][key]['value']) === item.quality;
         }) || '';
 
-        return this.#cs_english[qualityKey];
+        return this.cs_english[qualityKey];
     }
 
     getOriginName(item: ItemData): string | void {
@@ -363,7 +363,7 @@ export default class GameData {
 
     addAdditionalStickerData(sticker: Sticker, item: ItemData): Sticker {
         // Get sticker codename/name
-        const stickerKits = this.#items_game.sticker_kits;
+        const stickerKits = this.items_game.sticker_kits;
 
         const kit = stickerKits[sticker.sticker_id];
 
@@ -371,7 +371,7 @@ export default class GameData {
             return sticker;
         };
 
-        let name = this.#cs_english[kit.item_name.replace('#', '')];
+        let name = this.cs_english[kit.item_name.replace('#', '')];
 
         if (name) sticker.name = name;
 
@@ -389,7 +389,7 @@ export default class GameData {
 
     addAdditionalGraffitiStickerData(graffiti: Sticker) {
         // Get graffiti codename/name
-        const stickerKits = this.#items_game.sticker_kits;
+        const stickerKits = this.items_game.sticker_kits;
 
         const kit = stickerKits[graffiti.sticker_id];
 
@@ -397,10 +397,10 @@ export default class GameData {
             return graffiti;
         };
 
-        let name = this.#cs_english[kit.item_name.replace('#', '')];
+        let name = this.cs_english[kit.item_name.replace('#', '')];
 
         if (graffiti.tint_id) {
-            name += ` (${this.#cs_english[`Attrib_SprayTintValue_${graffiti.tint_id}`]})`;
+            name += ` (${this.cs_english[`Attrib_SprayTintValue_${graffiti.tint_id}`]})`;
         }
 
         if (name) graffiti.name = name;
@@ -420,7 +420,7 @@ export default class GameData {
     }
 
     getSet(setName: string): any {
-        return this.#items_game["item_sets"][setName];
+        return this.items_game["item_sets"][setName];
     }
 
     getSetBySkin(paintKitName: string, weaponClass: string): {
@@ -439,9 +439,9 @@ export default class GameData {
     indexSetRarities() {
         const skins: SetIndex = {};
 
-        const allItemValues: any[] = Object.values(this.#items_game["items"]);
+        const allItemValues: any[] = Object.values(this.items_game["items"]);
 
-        let rarities = Object.keys(this.#items_game['rarities']);
+        let rarities = Object.keys(this.items_game['rarities']);
 
         // Generates regex like /((set|crate)_[^_]+(_\d+)?)_(default|common|uncommon|rare|mythical|legendary|ancient|immortal|unusual)/
         const regex = new RegExp(`((set|crate)_[^_]+(_[^_]+)?)_(${rarities.join("|")})`);
@@ -449,13 +449,13 @@ export default class GameData {
         // Some sets like crate_valve_1 aren't properly documented, so extra data gathering is required.
         const setItemsWhichDontHaveData: { [set: string]: ItemSet } = {}
 
-        for (const lootList in this.#items_game['client_loot_lists']) {
+        for (const lootList in this.items_game['client_loot_lists']) {
             // God why did you have to name a map and an item rarity the exact same thing???
             if (lootList === "set_op10_ancient") {
                 continue;
             }
 
-            const setFromList = this.#items_game['client_loot_lists'][lootList];
+            const setFromList = this.items_game['client_loot_lists'][lootList];
             const itemsInRarityInSet = Object.keys(setFromList);
 
             let match = lootList.match(regex);
@@ -471,7 +471,7 @@ export default class GameData {
                 setName = match[1].replace("crate", "set");
             }
 
-            let set: ItemSet | undefined = { ...this.#items_game.item_sets[setName], original_name: setName };
+            let set: ItemSet | undefined = { ...this.items_game.item_sets[setName], original_name: setName };
 
             // Fuck you volvo for not properly having info for all collections available, still love u tho xoxo ples gib knife
             if (!set || !set.name) {
@@ -497,11 +497,11 @@ export default class GameData {
             }
 
             if (set.name.startsWith("#")) {
-                set.name = this.#cs_english[set.name.substring(1)];
+                set.name = this.cs_english[set.name.substring(1)];
             }
 
             if (set.set_description.startsWith("#")) {
-                set.set_description = this.#cs_english[set.set_description.substring(1)] ?? "";
+                set.set_description = this.cs_english[set.set_description.substring(1)] ?? "";
             }
 
             for (let item of itemsInRarityInSet) {
@@ -528,11 +528,11 @@ export default class GameData {
     }
 
     isAgent(item: ItemData): boolean {
-        return this.#items_game.items[item.defindex.toString()].name.startsWith("customplayer");
+        return this.items_game.items[item.defindex.toString()].name.startsWith("customplayer");
     }
 
     isPrestigeCoin(item: ItemData): boolean {
-        return this.#items_game.items[item.defindex.toString()].name.startsWith("prestige");
+        return this.items_game.items[item.defindex.toString()].name.startsWith("prestige");
     }
 
     #downloadFile(url: string, cb: ((file: string | null) => void)) {
@@ -562,15 +562,15 @@ export default class GameData {
         });
     };
 
-    get #cs_english() {
+    get cs_english() {
         return this.cdn.csEnglish;
     }
 
-    get #items_game_cdn() {
+    get items_game_cdn() {
         return this.cdn.itemsGameCDN;
     }
 
-    get #items_game() {
+    get items_game() {
         return this.cdn.itemsGame;
     }
 }

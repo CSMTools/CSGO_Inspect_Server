@@ -21,7 +21,7 @@ model steam_users {
 }
 
 model steam_item {
-  id                 String   @id @unique
+  id                 String            @id @unique
   defIndex           Int
   paintIndex         Int
   rarity             Int
@@ -33,10 +33,10 @@ model steam_item {
   paintWear          Float
   origin             Int
   fadePercentage     Float?
-  stickers           applied_sticker[]
   ownerId            String
-  ownerHistory       item_history[]
   lastUpdate         BigInt
+  stickers           applied_sticker[]
+  ownerHistory       item_history[]
 
   @@index([id])
   @@index([defIndex])
@@ -51,12 +51,10 @@ model applied_sticker {
   wear      Float?
   scale     Float?
   rotation  Float?
-
   itemId    String
   item      steam_item @relation(fields: [itemId], references: [id])
 
   @@id([itemId, slot, stickerId])
-
   @@index([stickerId])
   @@index([itemId])
 }
@@ -65,13 +63,11 @@ model item_history {
   ownerId       String
   inspectFields String
   type          ItemOwnerType
-  createdAt     DateTime @default(now())
-
+  createdAt     DateTime      @default(now())
   itemId        String
-  item          steam_item @relation(fields: [itemId], references: [id])
+  item          steam_item    @relation(fields: [itemId], references: [id])
 
   @@id([itemId, ownerId, createdAt])
-
   @@index([itemId])
   @@index([inspectFields])
 }

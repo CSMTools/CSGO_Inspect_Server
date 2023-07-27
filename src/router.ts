@@ -15,6 +15,7 @@ import itemsGetSticker from './lib/routes/items/get-sticker.js'
 import itemsGetSkin from './lib/routes/items/get-skin.js'
 
 import config from '../config.js'
+import getItemSearchFile from './lib/routes/items/get-item-search-file.js'
 
 export default async function router(fastify: FastifyInstance) {
   let botMaster;
@@ -43,6 +44,7 @@ export default async function router(fastify: FastifyInstance) {
 
   itemsGetSticker(fastify, botMaster.gameData.staticItems);
   itemsGetSkin(fastify, botMaster.gameData.staticItems);
+  getItemSearchFile(fastify, botMaster.gameData.staticItems);
 
   return;
 }

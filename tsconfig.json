@@ -1,21 +1,25 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "display": "Node 16",
-
   "compilerOptions": {
-    "lib": ["es2022"],
+    "lib": [
+      "es2022"
+    ],
     "module": "esnext",
     "target": "es2022",
-
     "outDir": "build",
-
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "plugins": [
+      {
+        "transform": "typia/lib/transform"
+      }
+    ],
+    "strictNullChecks": true
   },
-
   "exclude": [
     "config.example.ts"
   ]

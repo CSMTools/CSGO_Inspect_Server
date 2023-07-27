@@ -156,7 +156,7 @@ export default class Master {
       bot.sendInspectRequest(inspectData)
         .then((res) => {
           // Calculate fade percentage if applicable
-          const weaponName = this.gameData.getEnglishWeaponName(res, this.gameData.getWeaponData(res), this.gameData.getCodeName(res)).weapon_type;
+          const weaponName = this.gameData.getEnglishWeaponName(res.defindex, this.gameData.getWeaponData(res.defindex), this.gameData.getCodeName(res.paintindex)).weapon_type;
 
           if (isFade(res.paintindex)) {
             res.fadePercentage = FadeCalculator.getFadePercentage(weaponName, res.paintseed).percentage;
