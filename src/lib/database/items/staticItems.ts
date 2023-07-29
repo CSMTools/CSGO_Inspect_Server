@@ -1,3 +1,4 @@
+import { DopplerData } from "@csmtools/dopplerutils";
 import type GameData from "./game-data";
 
 type StaticSticker = {
@@ -14,16 +15,19 @@ type StaticWeapon = {
     rarity: number;
     rarityName: string;
     setImage: string;
+    icon: string;
 }
 
 interface StaticWeaponReturnedForSearch {
     rarity: number;
+    icon: string;
     defIndex: number;
     paintIndex: number;
 }
 
 export default class StaticItems {
     #gameData: GameData;
+    paramsToSkinIconIndex: Record<`${number}:${number}`, string> = {};
     itemSearchFile: string = "";
 
     constructor(gameData: GameData) {
@@ -32,11 +36,11 @@ export default class StaticItems {
         setTimeout(() => {
             gameData.cdn.on('ready', async () => {
                 console.time("itemSearchFile")
-                this.itemSearchFile = JSON.stringify(await this.#generateItemSearchFile());
+                this.itemSearchFile = await this.#generateItemSearchFile();
                 console.timeEnd("itemSearchFile")
 
                 setInterval(async () => {
-                    this.itemSearchFile = JSON.stringify(await this.#generateItemSearchFile());
+                    this.itemSearchFile = await this.#generateItemSearchFile();
                 }, 60 * 60 * 1000) // 1 hour
             })
         }, 1000)
@@ -90,7 +94,8 @@ export default class StaticItems {
             skinName: "",
             rarity: 0,
             rarityName: "",
-            setImage: ""
+            setImage: "",
+            icon: this.paramsToSkinIconIndex[`${defIndex}:${paintIndex}`] ?? ""
         };
 
         const paintKits = this.itemsGame.paint_kits;
@@ -110,7 +115,11 @@ export default class StaticItems {
         weapon.weaponName = weapon_type;
         weapon.skinName = item_name;
 
-        let set = this.#gameData.getSetBySkin(kit.name, weaponName)
+        if (DopplerData[weapon.skinName]) {
+            weapon.skinName += DopplerData[weapon.skinName][paintIndex]?.name ? ` (${DopplerData[weapon.skinName][paintIndex]?.name})` : "";
+        }
+
+        let set = this.#gameData.getSetBySkin(kit.name, weaponName);
 
         if (set) {
             // let setImage = this.#gameData.getSetIcon(set.set.original_name.replace("#CSGO_", ""));
@@ -125,10 +134,12 @@ export default class StaticItems {
         return weapon;
     }
 
-    async #generateItemSearchFile(): Promise<Record<string, StaticWeaponReturnedForSearch>> {
+    async #generateItemSearchFile(): Promise<string/*Record<string, StaticWeaponReturnedForSearch>*/> {
+        const result: Record<string, StaticWeaponReturnedForSearch | {
+            baseUrl: string
+        }> = {};
         const weaponToDefIndex: Record<string, number> = {};
         const paintKitToPaintIndex: Record<string, number> = {};
-        const matchedIcons: string[] = [];
 
         for (let defIndex in this.#gameData.items_game['items']) {
             const name = this.#gameData.items_game['items'][defIndex]['name'];
@@ -141,10 +152,21 @@ export default class StaticItems {
         for (let paintIndex in this.#gameData.items_game['paint_kits']) {
             const name = this.#gameData.items_game['paint_kits'][paintIndex]['name'];
 
-            paintKitToPaintIndex[name] = parseInt(paintIndex);
+            paintKitToPaintIndex[name.toLowerCase()] = parseInt(paintIndex);
         }
 
-        const itemsPattern = Object.keys(weaponToDefIndex).map((name) => name.slice(7)).filter((value) => value !== "knife").sort((a, b) => {
+        const weapons = Object.keys(weaponToDefIndex);
+
+        const itemsPattern = weapons.map((name) => name.slice(7)).filter((value) => {
+            if (value === "knife") {
+                return false;
+            }
+            if (value === "knife_t") {
+                return false;
+            }
+
+            return true;
+        }).sort((a, b) => {
             // Hoist m4a1_silencer to be above m4a1 to avoid matching issues.
             if (a === 'm4a1_silencer') {
                 return -1;
@@ -157,46 +179,58 @@ export default class StaticItems {
             return 0;
         }).join("|");
 
-        const pattern = "(weapon_(" + itemsPattern + "))_(.+)(_light|_medium|_heavy)$";
+        const extractBaseUrlRegex = /https?:\/\/.+default_generated\//;
+
+        result['_meta'] = {
+            baseUrl: (Object.values(this.#gameData.items_game_cdn as Record<string, string>))[0].match(extractBaseUrlRegex)?.[0] ?? ""
+        }
+
+        const pattern = "(weapon_(" + itemsPattern + "))(_(.+))?";
         const regex = new RegExp(pattern);
 
-        const icons =
-            Object.values(this.#gameData.items_game['alternate_icons2']['weapon_icons'])
-                .map((obj) => (obj as { icon_path: string })['icon_path']);
+        const iconCleaner = /\\r$/g;
 
-        const result: Record<string, StaticWeaponReturnedForSearch> = {}
-
-        for (let icon of icons) {
-            if (matchedIcons.includes(icon)) {
+        for (let skin in this.#gameData.items_game_cdn) {
+            if (!this.#gameData.items_game_cdn.hasOwnProperty(skin)) {
                 continue;
             }
-            matchedIcons.push(icon);
 
-            const match = icon.match(regex);
+            // Ignore any vanilla weapons
+            if (weapons.includes(skin)) {
+                continue;
+            }
+            
+            const icon = this.#gameData.items_game_cdn[skin];
+
+            const match = skin.match(regex);
 
             if (!match) {
                 continue;
             }
 
             const defIndex = weaponToDefIndex[match[1]];
-            const paintIndex = paintKitToPaintIndex[match[3]];
+            const paintIndex = paintKitToPaintIndex[match[4]];
+
+            this.paramsToSkinIconIndex[`${defIndex}:${paintIndex}`] = icon;
 
             const staticWeapon = this.getSkin(defIndex, paintIndex);
 
             if (!staticWeapon) {
-                // console.log('uh oh this shan\'t hast happent');
+                console.log(`${defIndex}:${paintIndex}`, skin, icon);
+                console.log('uh oh this shan\'t hast happent');
 
                 continue;
             }
 
             result[staticWeapon.weaponName + " | " + staticWeapon.skinName] = {
                 rarity: staticWeapon.rarity,
+                icon: icon.replace(extractBaseUrlRegex, ''),
                 defIndex,
                 paintIndex
             };
         }
 
-        return result;
+        return JSON.stringify(result).replace(iconCleaner, '');
     }
 
     get itemsGame() {
