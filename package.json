@@ -5,10 +5,9 @@
   "main": "build/index.js",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && copyfiles accounts.txt build",
     "hotcompile": "tsc -w",
-    "start": "tsc && node --experimental-specifier-resolution=node .",
-    "prepare": "ts-patch install"
+    "start": "yarn build && node --experimental-specifier-resolution=node ."
   },
   "repository": {
     "type": "git",
@@ -49,6 +48,7 @@
     "@types/node": "^20.2.5",
     "@types/steam-totp": "^2.1.0",
     "@types/steam-user": "^4.26.4",
+    "copyfiles": "^2.4.1",
     "ts-node": "^10.9.1",
     "tsc": "^2.0.4"
   }

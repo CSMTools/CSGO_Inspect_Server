@@ -3,11 +3,11 @@ import { LoginConfig } from './lib/types/BotTypes';
 
 export default function getAccounts() {
     const accounts: LoginConfig[] = [];
-    if (!fs.existsSync('../accounts.txt')) {
+    if (!fs.existsSync('./accounts.txt')) {
         throw new Error('No accounts.txt file in root of server.');
     }
 
-    const file = fs.readFileSync('../accounts.txt').toString();
+    const file = fs.readFileSync('./accounts.txt').toString();
 
     let line = 0;
 
