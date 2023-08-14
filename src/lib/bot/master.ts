@@ -23,15 +23,7 @@ const { AcidFadeCalculator, AmberFadeCalculator, FadeCalculator } = require('csg
 const TAG = 'Master';
 
 export default class Master {
-  #inspectQueue: Queue = new Queue((task: InspectRequest, cb) => {
-    this.#handleInspect(task, cb)
-  }, {
-    precondition: (cb) =>
-      cb(null, this.#hasFreeBot()),
-    preconditionRetryTimeout: 10,
-    maxRetries: config.bot_settings.max_attempts,
-    concurrent: config.logins.length
-  });
+  #inspectQueue: Queue;
   #botsAvailable: number = 0;
   #settings: BotSettings;
   #logins: LoginConfig[];
@@ -48,6 +40,16 @@ export default class Master {
     if (database !== null) {
       this.#inspectCache = new InspectCache(database, this.gameData);
     }
+
+    this.#inspectQueue = new Queue((task: InspectRequest, cb) => {
+      this.#handleInspect(task, cb)
+    }, {
+      precondition: (cb) =>
+        cb(null, this.#hasFreeBot()),
+      preconditionRetryTimeout: 10,
+      maxRetries: settings.max_attempts,
+      concurrent: logins.length
+    });
 
     this.CDN.on('ready', () => {
       this.#createBots();
@@ -203,7 +205,7 @@ export default class Master {
           if (addAdditional) {
             cachedItem = this.gameData.addAdditionalItemProperties(cachedItem);
           }
-          
+
           return resolve(cachedItem);
         }
       }

@@ -16,15 +16,18 @@ import itemsGetSkin from './lib/routes/items/get-skin.js'
 
 import config from '../config.js'
 import getItemSearchFile from './lib/routes/items/get-item-search-file.js'
+import getAccounts from './accountLoader.js'
 
 export default async function router(fastify: FastifyInstance) {
+  const logins = getAccounts();
+
   let botMaster;
 
   if (config.enabled_modules.database) {
     const dataManager = new DataManager()
-    botMaster = new BotMaster(config.logins, config.bot_settings, dataManager)
+    botMaster = new BotMaster(logins, config.bot_settings, dataManager)
   } else {
-    botMaster = new BotMaster(config.logins, config.bot_settings)
+    botMaster = new BotMaster(logins, config.bot_settings)
   }
 
   if (config.enabled_modules.file_storage) {

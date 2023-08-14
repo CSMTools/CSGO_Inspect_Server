@@ -13,13 +13,11 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
-    "plugins": [
-      {
-        "transform": "typia/lib/transform"
-      }
-    ],
     "strictNullChecks": true
   },
+  "include": [
+    "account.txt"
+  ],
   "exclude": [
     "config.example.ts"
   ]

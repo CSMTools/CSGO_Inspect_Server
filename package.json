@@ -50,7 +50,6 @@
     "@types/steam-totp": "^2.1.0",
     "@types/steam-user": "^4.26.4",
     "ts-node": "^10.9.1",
-    "ts-patch": "^3.0.2",
     "tsc": "^2.0.4"
   }
 }

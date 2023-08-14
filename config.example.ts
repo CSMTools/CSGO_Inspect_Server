@@ -5,20 +5,6 @@ export default {
     },
     // Whether to trust a forwarding proxy's IP (trust X-Forwarded-For)
     'trust_proxy': false,
-    // List of usernames and passwords for the Steam accounts
-    'logins': [
-        {
-            'user': 'USERNAME',
-            'pass': 'PASSWORD',
-            // Use the shared_secret of mobile 2FA
-            'auth': 'SHARED_SECRET'
-        },
-        {
-            'user': 'USERNAME_2',
-            'pass': 'PASSWORD_2',
-            'auth': 'SHARED_SECRET_2'
-        }
-    ],
     // Bot settings
     'bot_settings': {
         // Amount of attempts for each request to Valve
