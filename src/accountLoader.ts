@@ -11,7 +11,7 @@ export default function getAccounts() {
 
     let line = 0;
 
-    for (const account of file.split('\n')) {
+    for (const account of file.trim().split('\n')) {
         line++;
 
         const details = account.split(':');
